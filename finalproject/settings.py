@@ -29,8 +29,8 @@ ALLOWED_HOSTS = []
 
 
 # Application definition
-
 INSTALLED_APPS = [
+    'workably',
     'django.contrib.admin',
     'django.contrib.auth',
     'django.contrib.contenttypes',
