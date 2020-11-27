@@ -143,7 +143,7 @@ class Milestone(models.Model):
         }
 
     def __str__(self):
-        return f"{self.roadmap.name}: {self.name}"
+        return f"{self.roadmap.name}: #{self.number} {self.description}"
 
 
 class ImpactType(models.Model):
@@ -169,4 +169,4 @@ class Impact(models.Model):
         }
 
     def __str__(self):
-        return f"{self.milestone.roadmap.name}, {self.milestone.name}: {self.impact_type}, {self.impact.amount}"
+        return f"{self.milestone.roadmap.name}, #{self.milestone.number} {self.milestone.description}: {self.impact_type}, {self.amount}"
