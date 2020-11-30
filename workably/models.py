@@ -13,25 +13,42 @@ class Role(models.Model):
 
 
 class User(AbstractUser):
-    username = models.CharField(blank=False, max_length=64, unique=True)
-    first_name = models.CharField(blank=False, max_length=64)
-    last_name = models.CharField(blank=False, max_length=64)
-    email = models.EmailField(blank=False, max_length=100)
-    phone = models.CharField(blank=True, max_length=20)
-    role = models.ForeignKey(
-        Role, null=True, on_delete=models.SET_NULL, related_name="role")
-    is_superuser = models.BooleanField(default=False)
+    pass
 
     def serialize(self):
         return {
             "id": self.id,
-            "full_name": self.first_name + " " + self.last_name,
+            "username": self.username,
             "email": self.email,
-            "phone": self.phone,
-            "role": self.role,
-            "is_superuser": self.is_superuser,
             "last_login": self.last_login
         }
+
+    def __str__(self):
+        return f"{self.username}"
+
+
+class Profile(models.Model):
+    user = models.OneToOneField(
+        User, on_delete=models.CASCADE, related_name="profile")
+    first_name = models.CharField(blank=False, max_length=64)
+    last_name = models.CharField(blank=False, max_length=64)
+    phone = models.CharField(blank=True, max_length=20)
+    role = models.ForeignKey(
+        Role, null=True, on_delete=models.SET_NULL, related_name="role")
+
+    def serialize(self):
+        return {
+            "userid": self.user.id,
+            "username": self.user.username,
+            "email": self.user.email,
+            "phone": self.user.phone,
+            "last_login": self.user.last_login,
+            "full_name": self.first_name + " " + self.last_name,
+            "role": self.role
+        }
+
+    def __str__(self):
+        return f"{self.user.username}'s profile"
 
 
 class Program(models.Model):
@@ -156,7 +173,8 @@ class ImpactType(models.Model):
 class Impact(models.Model):
     impact_type = models.ForeignKey(
         ImpactType, on_delete=models.CASCADE, related_name="impacts")
-    amount = models.IntegerField()
+    plan_amount = models.IntegerField(blank=True, null=True)
+    forecast_amount = models.IntegerField(blank=True, null=True)
     milestone = models.ForeignKey(
         Milestone, on_delete=models.CASCADE, related_name="impacts")
 
@@ -164,9 +182,13 @@ class Impact(models.Model):
         return {
             "id": self.id,
             "impact_type": self.impact_type,
-            "amount": self.amount,
+            "plan_amount": self.plan_amount,
+            "forecast_amount": self.forecast_amount,
             "milestone": self.milestone
         }
 
     def __str__(self):
-        return f"{self.milestone.roadmap.name}, #{self.milestone.number} {self.milestone.description}: {self.impact_type}, {self.amount}"
+        if self.forecast_amount is None:
+            return f"{self.milestone.roadmap.name}, #{self.milestone.number} {self.milestone.description}: {self.impact_type}, {self.plan_amount}"
+        else:
+            return f"{self.milestone.roadmap.name}, #{self.milestone.number} {self.milestone.description}: {self.impact_type}, {self.forecast_amount}"

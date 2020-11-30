@@ -1,8 +1,8 @@
-{% extends "network/layout.html" %}
+{% extends "workably/layout.html" %}
 
 {% block body %}
 
-<h2>Register</h2>
+<h2>Register a new user</h2>
 
 {% if message %}
 <div>{{ message }}</div>
@@ -17,7 +17,7 @@
     <input class="form-control" autofocus type="text" name="first_name" placeholder="First Name">
   </div>
   <div class="form-group">
-    <input class="form-control" autofocus type="text" name="last name" placeholder="Last Name">
+    <input class="form-control" autofocus type="text" name="last_name" placeholder="Last Name">
   </div>
   <div class="form-group">
     <input class="form-control" type="email" name="email" placeholder="Email Address">
@@ -27,6 +27,7 @@
   </div>
   <div class="form-group">
     <select autofocus class="form-control" name="role">
+      <option value="" disabled selected hidden>Choose a User Role</option>
       {% for role in roles %}
       <option value="{{ role.name }}">{{ role.name }}</option>
       {% endfor %}
@@ -40,7 +41,5 @@
   </div>
   <input class="btn btn-primary" type="submit" value="Register">
 </form>
-
-Already have an account? <a href="{% url 'login' %}">Log In here.</a>
 
 {% endblock %}

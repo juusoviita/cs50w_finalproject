@@ -1,0 +1,19 @@
+{% extends "workably/layout.html" %}
+{% load static %}
+
+{% block body %}
+{% if message %}
+<div>{{ message }}</div>
+{% endif %}
+{% if user.is_authenticated %}
+<h1>TO DO</h1>
+<div id="admin-view">Admin view comes here.</div>
+<br> You can:
+<ul>
+  <li>Check who have signed in and when</li>
+  <li>Change passwords</li>
+  <li>Give users new rights</li>
+  <li>Etc.</li>
+</ul>
+{% endif %}
+{% endblock %}

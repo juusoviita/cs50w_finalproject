@@ -2,5 +2,18 @@
 {% load static %}
 
 {% block body %}
+{% if message %}
+<div>{{ message }}</div>
+{% endif %}
+{% if user.is_authenticated %}
 <h1>TO DO</h1>
+{% if user.profile.role.name != 'Roadmap owner' %}
+<div id="mgmt-view">Management view comes here.</div>
+{% endif %}
+<div id="roadmap-view">Roadmap view comes here.</div>
+
+{% else %}
+Please <a href="{% url 'login' %}">Login.</a><br>
+If you don't have an account, you can <a href="{% url 'request_account' %}">request one from here.</a>
+{% endif %}
 {% endblock %}
