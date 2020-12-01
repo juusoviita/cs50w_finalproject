@@ -74,7 +74,7 @@ class Stream(models.Model):
     parent = models.ForeignKey(
         'self', on_delete=models.CASCADE, blank=True, null=True, related_name="substream")
     program = models.ForeignKey(
-        Program, on_delete=models.CASCADE, related_name="program")
+        Program, on_delete=models.CASCADE, related_name="streams")
     admins = models.ManyToManyField(User, blank=True)
 
     def serialize(self):
@@ -124,15 +124,15 @@ class Roadmap(models.Model):
             "id": self.id,
             "path": self.path,
             "name": self.name,
-            "owner": self.owner,
-            "stream": self.stream,
+            "owner": self.owner.id,
+            "stream": self.stream.id,
             "description": self.description,
             "comments": self.comments,
             "created_on": self.created_on,
             "last_updated": self.last_updated,
-            "last_updater": self.last_updater.get_full_name(),
+            "last_updater": self.last_updater,
             "region": self.region,
-            "country": self.country
+            "country": self.country.name
         }
 
     def __str__(self):
@@ -156,7 +156,7 @@ class Milestone(models.Model):
             "plan_date": self.plan_date,
             "forecast_date": self.forecast_date,
             "realized": self.realized,
-            "roadmap": self.roadmap
+            "roadmap": self.roadmap.id
         }
 
     def __str__(self):

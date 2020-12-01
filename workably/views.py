@@ -1,5 +1,6 @@
 from django.shortcuts import render
 from django.http import HttpResponse, HttpResponseRedirect, JsonResponse
+from django.core import serializers
 from django.contrib.auth import authenticate, login, logout
 from django.contrib.auth.decorators import login_required
 from django.db import IntegrityError
@@ -16,8 +17,8 @@ def get_roadmaps(request):
     user = request.user
     # if user is superuser, get all of the roadmaps
     if user.is_superuser == True:
-        program = Program.objects.filter(admins=user)
-        streams = Stream.objects.filter(program=program)
+        programs = Program.objects.filter(admins=user)
+        streams = Stream.objects.filter(program__in=programs)
         roadmaps = Roadmap.objects.all()
 
     # if user is a Roadmap owner
@@ -31,6 +32,28 @@ def get_roadmaps(request):
         roadmaps = Roadmap.objects.filter(stream__in=streams)
 
     return JsonResponse([roadmap.serialize() for roadmap in roadmaps], safe=False)
+
+
+def roadmap(request, roadmap_id):
+    if request.method == "GET":
+        roadmap = Roadmap.objects.filter(pk=roadmap_id)
+        roadmap_json = serializers.serialize('json', roadmap)
+        return HttpResponse(roadmap_json, content_type="text/json-comment-filtered")
+
+
+def milestones(request, roadmap_id):
+    if request.method == "GET":
+        # roadmap = Roadmap.objects.filter(pk=roadmap_id)
+        milestones = Milestone.objects.filter(roadmap__id=roadmap_id)
+
+        return JsonResponse([milestone.serialize() for milestone in milestones], safe=False)
+
+
+def user(request, user_id):
+    if request.method == "GET":
+        user = User.objects.filter(pk=user_id)
+        user_json = serializers.serialize('json', user)
+        return HttpResponse(user_json, content_type="text/json-comment-filtered")
 
 
 def reporting(request):

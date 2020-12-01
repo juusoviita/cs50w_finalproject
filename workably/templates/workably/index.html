@@ -6,11 +6,12 @@
 <div>{{ message }}</div>
 {% endif %}
 {% if user.is_authenticated %}
-<h1>TO DO</h1>
 {% if user.profile.role.name != 'Roadmap owner' %}
 <div id="mgmt-view">Management view comes here.</div>
 {% endif %}
-<div id="roadmap-view">Roadmap view comes here.</div>
+<div id="roadmap-view"></div>
+<div id="edit-view"></div>
+<div id="milestone-list"></div>
 
 {% else %}
 Please <a href="{% url 'login' %}">Login.</a><br>
