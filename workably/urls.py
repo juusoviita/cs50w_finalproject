@@ -12,6 +12,10 @@ urlpatterns = [
     # API paths
     path("roadmaps", views.get_roadmaps, name="get_roadmaps"),
     path("roadmap/<int:roadmap_id>", views.roadmap, name="get_roadmap"),
+    path("editroadmap", views.edit_roadmap, name="edit_roadmap"),
     path("user/<int:user_id>", views.user, name="get_user"),
-    path("milestones/<int:roadmap_id>", views.milestones, name="get_milestones")
+    path("profiles", views.profiles, name="get_profiles"),
+    path("milestones/<int:roadmap_id>", views.milestones, name="get_milestones"),
+    path("countries", views.country_list, name="countries"),
+    path("regions", views.regions, name="regions")
 ]

@@ -41,10 +41,10 @@ class Profile(models.Model):
             "userid": self.user.id,
             "username": self.user.username,
             "email": self.user.email,
-            "phone": self.user.phone,
+            "phone": self.phone,
             "last_login": self.user.last_login,
             "full_name": self.first_name + " " + self.last_name,
-            "role": self.role
+            "role": self.role.name
         }
 
     def __str__(self):
@@ -130,7 +130,7 @@ class Roadmap(models.Model):
             "comments": self.comments,
             "created_on": self.created_on,
             "last_updated": self.last_updated,
-            "last_updater": self.last_updater,
+            "last_updater": self.last_updater.id,
             "region": self.region,
             "country": self.country.name
         }

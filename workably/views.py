@@ -3,10 +3,13 @@ from django.http import HttpResponse, HttpResponseRedirect, JsonResponse
 from django.core import serializers
 from django.contrib.auth import authenticate, login, logout
 from django.contrib.auth.decorators import login_required
+from django.views.decorators.csrf import csrf_exempt
 from django.db import IntegrityError
 from django.urls import reverse
+from django_countries import countries
 
 import json
+import datetime
 
 from .models import Role, User, Profile, Program, Stream, Roadmap, Milestone, ImpactType, Impact
 
@@ -41,11 +44,31 @@ def roadmap(request, roadmap_id):
         return HttpResponse(roadmap_json, content_type="text/json-comment-filtered")
 
 
+@csrf_exempt
+def edit_roadmap(request):
+    if request.method == "PUT":
+        data = json.loads(request.body)
+
+        last_updater = request.user
+        last_updated = datetime.date.today()
+
+        roadmap_id = data.get("roadmap_id", "")
+        new_name = data.get("name", "")
+        new_owner = data.get("owner", "")
+        new_description = data.get("description", "")
+        new_country = data.get("country", "")
+        new_region = data.get("region", "")
+
+        Roadmap.objects.filter(pk=roadmap_id).update(name=new_name, description=new_description, owner=new_owner,
+                                                     last_updated=last_updated, last_updater=last_updater, country=new_country, region=new_region)
+
+        return JsonResponse({"result": "done"}, safe=False)
+
+
 def milestones(request, roadmap_id):
     if request.method == "GET":
         # roadmap = Roadmap.objects.filter(pk=roadmap_id)
         milestones = Milestone.objects.filter(roadmap__id=roadmap_id)
-
         return JsonResponse([milestone.serialize() for milestone in milestones], safe=False)
 
 
@@ -54,6 +77,34 @@ def user(request, user_id):
         user = User.objects.filter(pk=user_id)
         user_json = serializers.serialize('json', user)
         return HttpResponse(user_json, content_type="text/json-comment-filtered")
+
+
+def profiles(request):
+    profiles = Profile.objects.all()
+    profiles = profiles.order_by("first_name")
+    return JsonResponse([profile.serialize() for profile in profiles], safe=False)
+
+
+def regions(request):
+    regions = Roadmap.objects.order_by('region').values('region').distinct()
+    regiondict = {}
+    i = 1
+    for region in regions:
+        reg = region["region"]
+        regiondict[i] = reg
+        i += 1
+
+    return JsonResponse({"regions": regiondict}, safe=False)
+
+
+def country_list(request):
+    country_dict = {}
+    i = 1
+    for code, name in list(countries):
+        country_dict[i] = {"code": code, "name": name}
+        i += 1
+
+    return JsonResponse(country_dict, safe=False)
 
 
 def reporting(request):

@@ -1,6 +1,10 @@
 document.addEventListener('DOMContentLoaded', function () {
   // document.querySelector('#roadmap-dropdown').addEventListener('click', () => load_roadmaps())
 
+  document.querySelector('#edit-view').style.display = 'none';
+  document.querySelector("#roadmap-view").style.display = 'none';
+  document.querySelector("#milestone-list").style.display = 'none';
+
 
   // if user is a roadmap owner, i.e. there's a roadmap dropdown menu in the navbar,
   // query all the roadmap names and add them to the dropdown and link them to the load_roadmap function
@@ -25,11 +29,21 @@ document.addEventListener('DOMContentLoaded', function () {
 
 // first loads the roadmaps information, then loads the milestones and impacts
 function load_roadmap(roadmap_id) {
+  document.querySelector('#edit-view').style.display = 'none';
+  document.querySelector("#roadmap-view").style.display = 'block';
+  document.querySelector("#milestone-list").style.display = 'block';
   document.querySelector("#roadmap-view").innerHTML = '';
   document.querySelector("#milestone-list").innerHTML = '<h6>Milestones<h6>';
   fetch(`/roadmap/${roadmap_id}`)
     .then(response => response.json())
     .then(result => {
+
+      var roadmap_name = result[0].fields.name;
+      var created_on = result[0].fields.created_on;
+      var description = result[0].fields.description;
+      var country = result[0].fields.country;
+      var region = result[0].fields.region;
+      var owner = result[0].fields.owner;
 
       if (result[0].fields.last_updated == null) {
         var last_updated = '';
@@ -42,34 +56,54 @@ function load_roadmap(roadmap_id) {
         var last_updater = result[0].fields.last_updater;
       }
 
-
       var info = document.createElement('div');
       info.classList.add("container");
       info.innerHTML = `<div class="row">
-                          <div class="col"><h6>${result[0].fields.name}</h6></div>
-                          <div class="col" style="color:darkgray;text-align:right;"><i><small>Created on: ${result[0].fields.created_on}</small></i></div>
+                          <div class="col"><h6>${roadmap_name}</h6></div>
+                          <div class="col" style="color:darkgray;text-align:right;"><i><small>Created on: ${created_on}</small></i></div>
                         </div>
                         <div class="row">
                           <div id="owner-name" class="col"></div>
                           <div class="col" style="color:darkgray;text-align:right;"><i><small>Last updated on: ${last_updated}</small></i></div>
                         </div>
                         <div class="row">
-                          <div class="col-10">${result[0].fields.description}</div>
-                          <div class="col" style="color:darkgray;text-align:right;"><i><small>By: ${last_updater}</small></i></div>
+                          <div class="col-10">${description}</div>
+                          <div id="updater-div" class="col" style="color:darkgray;text-align:right;"></div>
                         </div>
                         <div class="row">
-                          <div class="col">${result[0].fields.country}, ${result[0].fields.region}</div>
+                          <div id="location" class="col">${country}, ${region}</div>
                           <div id="edit-${roadmap_id}" class="col-2"><div class="edit" style="color:blue;text-align:right;">Edit</div></div>
                         </div>`;
       document.querySelector("#roadmap-view").appendChild(info);
       // add ability to edit the roadmap's basic info
-      document.getElementById(`edit-${roadmap_id}`).addEventListener('click', () => edit_roadmap(roadmap_id));
+      document.getElementById(`edit-${roadmap_id}`).addEventListener('click', () => edit_roadmap(roadmap_id, roadmap_name, owner, created_on, last_updated, description, last_updater, country, region));
 
-      // get user information for the roadmap-info view
-      fetch(`/user/${result[0].fields.owner}`)
+      // get user information for the owner and the latest updater fields in the roadmap-info view
+      var owner_div = document.getElementById('owner-name');
+      fetch(`/user/${owner}`)
         .then(response => response.json())
         .then(user => {
-          document.getElementById('owner-name').innerHTML = 'Owner: ' + user[0].fields.first_name + " " + user[0].fields.last_name;
+          owner_div.innerHTML = 'Owner: ' + user[0].fields.first_name + " " + user[0].fields.last_name;
+        })
+
+      var updater_div = document.getElementById('updater-div');
+      fetch(`/user/${last_updater}`)
+        .then(response => response.json())
+        .then(user => {
+          var updater = user[0].fields.first_name + " " + user[0].fields.last_name;
+          updater_div.innerHTML = `<i><small>By: ${updater}</small></i>`
+        })
+
+      // get the country information
+      var location_div = document.getElementById('location');
+      fetch('/countries')
+        .then(response => response.json())
+        .then(countries => {
+          var length = Object.keys(countries).length;
+          for (i = 1; i < length + 1; i++)
+            if (countries[i].code == country) {
+              location_div.innerHTML = `${countries[i].name}, ${region}`;
+            }
         })
 
       // get milestones
@@ -107,17 +141,129 @@ function load_roadmap(roadmap_id) {
                                   <div class="col-2">${plan_date}</div>
                                   <div class="col-2">${forecast_date}</div>
                                   <div class="col-2"><input type="checkbox" id="act-${milestone.id}"></div>
-                                  <div class="col-1" id="del-${milestone.id}"><i class="fa fa-trash-o"></i></div>
+                                  <div class="col-1" id="del-${milestone.id}"><i class="fa fa-trash-o" style"float:right"></i></div>
                                 </div>`;
             document.querySelector("#milestone-list").appendChild(ms_row);
             document.getElementById(`act-${milestone.id}`).checked = milestone.realized;
           });
-          // add milestone button
+          // add 'Add Milestone' button
         })
     })
 }
 
-function edit_roadmap(roadmap_id) {
-  console.log(roadmap_id);
-  console.log(typeof roadmap_id);
+function edit_roadmap(roadmap_id, roadmap_name, owner, created_on, last_updated, description, last_updater, current_country, current_region) {
+  // hide the roadmap info and show the edit view
+  document.querySelector('#roadmap-view').style.display = 'none';
+  document.querySelector('#edit-view').style.display = 'block';
+  document.querySelector("#edit-view").innerHTML = '';
+
+  // create the text fields and put in the data for editing
+  var edit = document.createElement('div');
+  edit.classList.add("container");
+  edit.innerHTML = `<div class="row">
+                      <div class="col-10"><input type="text" id="edit-name" value="${roadmap_name}"></div>
+                      <div class="col-2" style="color:darkgray;text-align:right;"><i><small>Created on: ${created_on}</small></i></div>
+                    </div>
+                    <div class="row">
+                      <div class="col-10"><select id="edit-owner" name="owners"></select></div>
+                      <div class="col-2" style="color:darkgray;text-align:right;"><i><small>Last updated on: ${last_updated}</small></i></div>
+                    </div>
+                    <div class="row">
+                      <div class="col-10"><textarea id="edit-desc">${description}</textarea></div>
+                      <div id="edit-updater-div" class="col-2" style="color:darkgray;text-align:right;"></div>
+                    </div>
+                    <div class="row">
+                      <div class="col-5"><select id="edit-country" name="countries"></select></div>
+                      <div class="col-5"><select id="edit-region" name="regions"></select></div>
+                      <div class="col-2"><input type="button" id="save-${roadmap_id}" class="btn btn-primary" style="float:right" value="Save Edits"></div>
+                    </div>`;
+
+  document.querySelector("#edit-view").appendChild(edit);
+  // add save function to save button
+  document.getElementById(`save-${roadmap_id}`).addEventListener('click', () => post_edits(roadmap_id));
+
+  // add last updater's name
+  var updater_div = document.getElementById('edit-updater-div');
+  fetch(`/user/${last_updater}`)
+    .then(response => response.json())
+    .then(user => {
+      var updater = user[0].fields.first_name + " " + user[0].fields.last_name;
+      updater_div.innerHTML = `<i><small>By: ${updater}</small></i>`
+    })
+
+  // get list of users and add them to the edit-owner dropdown
+  var owner_dropdown = document.getElementById('edit-owner');
+  fetch('/profiles')
+    .then(response => response.json())
+    .then(profiles => {
+      profiles.forEach(profile => {
+        if (profile.userid == owner) {
+          var current_owner = profile.full_name;
+          owner_dropdown.innerHTML = `<option value="${owner}">${current_owner}</option>`;
+        }
+      })
+      profiles.forEach(profile => {
+        owner_dropdown.innerHTML += `<option value="${profile.userid}">${profile.full_name}</option>`;
+      })
+    })
+
+  // get list of regions and add them to the edit-region dropdown
+  var region_dropdown = document.getElementById('edit-region');
+  region_dropdown.innerHTML = `<option value="${current_region}">${current_region}</option>`;
+  fetch('/regions')
+    .then(response => response.json())
+    .then(result => {
+      const regions = result.regions;
+      var length = Object.keys(regions).length;
+      for (i = 1; i < length + 1; i++) {
+        if (regions[i] != current_region) {
+          var region = regions[i];
+          region_dropdown.innerHTML += `<option value="${region}">${region}</option>`;
+        }
+      }
+    })
+
+  // get list of countries and add them to the edit-country dropdown
+  var country_dropdown = document.getElementById('edit-country');
+  fetch('/countries')
+    .then(response => response.json())
+    .then(countries => {
+      var length = Object.keys(countries).length;
+      for (j = 1; j < length + 1; j++)
+        if (countries[j].code == current_country) {
+          country_dropdown.innerHTML += `<option value="${countries[j].code}">${countries[j].name}</option>`;
+        }
+      for (k = 1; k < length + 1; k++) {
+        if (countries[k].code != current_country) {
+          country_dropdown.innerHTML += `<option value="${countries[k].code}">${countries[k].name}</option>`;
+        }
+      }
+    })
+}
+
+
+function post_edits(roadmap_id) {
+  // get all the data from the fields
+  var name = document.getElementById('edit-name').value;
+  var owner = parseInt(document.getElementById('edit-owner').value);
+  var description = document.getElementById('edit-desc').value;
+  var country = document.getElementById('edit-country').value;
+  var region = document.getElementById('edit-region').value;
+
+  // update the roadmap's info using POST
+  fetch('/editroadmap', {
+    method: 'PUT',
+    body: JSON.stringify({
+      roadmap_id: roadmap_id,
+      name: name,
+      owner: owner,
+      description: description,
+      country: country,
+      region: region,
+    })
+  })
+    .then(response => response.json())
+    .then(result => {
+      load_roadmap(roadmap_id);
+    })
 }
