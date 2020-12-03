@@ -43,3 +43,10 @@ input {
 #edit-owner, #edit-country, #edit-region {
   margin-bottom: 5px;
 }
+
+select {
+  border-style: solid;
+  border-width: 0.5px;
+  border-radius: 6px;
+  border-color: darkgray;
+}

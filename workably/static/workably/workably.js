@@ -34,6 +34,14 @@ function load_roadmap(roadmap_id) {
   document.querySelector("#milestone-list").style.display = 'block';
   document.querySelector("#roadmap-view").innerHTML = '';
   document.querySelector("#milestone-list").innerHTML = '<h6>Milestones<h6>';
+
+  // add 'Add Milestone' button
+  var ms_button = document.createElement('div');
+  ms_button.innerHTML = '<input type="button" id="add-milestone" class="btn btn-secondary btn-sm" style="float:left" value="Add Milestone"><br>';
+  document.querySelector("#milestone-list").appendChild(ms_button);
+  document.getElementById('add-milestone').addEventListener('click', () => add_milestone(roadmap_id));
+
+
   fetch(`/roadmap/${roadmap_id}`)
     .then(response => response.json())
     .then(result => {
@@ -146,7 +154,6 @@ function load_roadmap(roadmap_id) {
             document.querySelector("#milestone-list").appendChild(ms_row);
             document.getElementById(`act-${milestone.id}`).checked = milestone.realized;
           });
-          // add 'Add Milestone' button
         })
     })
 }
@@ -266,4 +273,8 @@ function post_edits(roadmap_id) {
     .then(result => {
       load_roadmap(roadmap_id);
     })
+}
+
+function add_milestone(roadmap_id) {
+  console.log(`Adding milestone to roadmap ${roadmap_id}`)
 }
