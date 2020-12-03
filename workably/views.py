@@ -62,7 +62,7 @@ def edit_roadmap(request):
         Roadmap.objects.filter(pk=roadmap_id).update(name=new_name, description=new_description, owner=new_owner,
                                                      last_updated=last_updated, last_updater=last_updater, country=new_country, region=new_region)
 
-        return JsonResponse({"result": "done"}, safe=False)
+        return JsonResponse({"result": "Roadmap edited"}, safe=False)
 
 
 def milestones(request, roadmap_id):
@@ -70,6 +70,19 @@ def milestones(request, roadmap_id):
         # roadmap = Roadmap.objects.filter(pk=roadmap_id)
         milestones = Milestone.objects.filter(roadmap__id=roadmap_id)
         return JsonResponse([milestone.serialize() for milestone in milestones], safe=False)
+
+
+def impacts(request, milestone_id):
+    if request.method == "GET":
+        impacts = Impact.objects.filter(milestone__id=milestone_id)
+        if len(impacts) == 0:
+            return JsonResponse({"message": "no impacts"}, safe=False)
+        else:
+            for impact in impacts:
+                print(impact)
+            return JsonResponse([impact.serialize() for impact in impacts], safe=False)
+
+    return JsonResponse({"result": "done"}, safe=False)
 
 
 def user(request, user_id):

@@ -63,7 +63,7 @@ function load_roadmap(roadmap_id) {
       } else {
         var last_updater = result[0].fields.last_updater;
       }
-
+      // add roadmap info to the top of the view
       var info = document.createElement('div');
       info.classList.add("container");
       info.innerHTML = `<div class="row">
@@ -108,10 +108,11 @@ function load_roadmap(roadmap_id) {
         .then(response => response.json())
         .then(countries => {
           var length = Object.keys(countries).length;
-          for (i = 1; i < length + 1; i++)
+          for (i = 1; i < length + 1; i++) {
             if (countries[i].code == country) {
               location_div.innerHTML = `${countries[i].name}, ${region}`;
             }
+          }
         })
 
       // get milestones
@@ -131,28 +132,63 @@ function load_roadmap(roadmap_id) {
             } else {
               var forecast_date = milestone.forecast_date;
             }
-
+            // add milestone to the page
             var ms_row = document.createElement('div');
             ms_row.classList.add("container");
-            ms_row.innerHTML = `
-                                <div class="row">
+            ms_row.setAttribute("id", `ms-${milestone.id}`)
+            ms_row.innerHTML = `<div class="row">
                                   <div class="col-1"><small>#</small></div>
                                   <div class="col-4"><small>Description</small></div>
-                                  <div class="col-2"><small>Plan</small></div>
-                                  <div class="col-2"><small>Forecast</small></div>
-                                  <div class="col-2"><small>Realized</small></div>
+                                  <div class="col-2 d-flex justify-content-center"><small>Plan</small></div>
+                                  <div class="col-2 d-flex justify-content-center"><small>Forecast</small></div>
+                                  <div class="col-2 d-flex justify-content-center"><small>Realized</small></div>
                                   <div class="col-1"><small></small></div>
                                 </div>
                                 <div class="row">
-                                  <div class="col-1">${milestone.number}</div>
+                                  <div id="ms-${milestone.number}" class="col-1">${milestone.number}</div>
                                   <div class="col-4">${milestone.description}</div>
-                                  <div class="col-2">${plan_date}</div>
-                                  <div class="col-2">${forecast_date}</div>
-                                  <div class="col-2"><input type="checkbox" id="act-${milestone.id}"></div>
-                                  <div class="col-1" id="del-${milestone.id}"><i class="fa fa-trash-o" style"float:right"></i></div>
+                                  <div class="col-2 d-flex justify-content-center">${plan_date}</div>
+                                  <div class="col-2 d-flex justify-content-center"><input type="date" class="input-field" id="fcst-date-${milestone.id}" value="${forecast_date}"></div>
+                                  <div class="col-2 d-flex justify-content-center" style="padding:8px;"><input type="checkbox" id="act-${milestone.id}"></div>
+                                  <div class="col-1 d-flex justify-content-end" id="del-${milestone.id}"><div class="trash"><i class="fa fa-trash-o"></i></div></div>
                                 </div>`;
             document.querySelector("#milestone-list").appendChild(ms_row);
             document.getElementById(`act-${milestone.id}`).checked = milestone.realized;
+            // get and add impacts to the milestone div
+            fetch(`/impacts/${milestone.id}`)
+              .then(response => response.json())
+              .then(impact => {
+                if ("message" in impact) {
+                  console.log(impact);
+                } else {
+                  var length = Object.keys(impact).length;
+                  console.log(impact);
+                  for (i = 0; i < length; i++) {
+                    if (impact[i].plan_amount == null) {
+                      var plan_amount = '';
+                    } else {
+                      var plan_amount = impact[i].plan_amount;
+                    }
+                    if (impact[i].forecast_amount == null) {
+                      var forecast_amount = '';
+                    } else {
+                      var forecast_amount = impact[i].forecast_amount;
+                    }
+                    var impact_row = document.createElement('div');
+                    impact_row.setAttribute("id", `imp-${impact[i].id}`);
+                    impact_row.innerHTML = `<hr>
+                                            <div class="row">
+                                              <div class="col-1"></div>
+                                              <div class="col-4 d-flex justify-content-end">${impact[i].impact_type}</div>
+                                              <div class="col-2 d-flex justify-content-center">${plan_amount}</div>
+                                              <div class="col-2 d-flex justify-content-center"><input class="input-field" type="number" id="fcst-value-${impact[i].id}" value="${forecast_amount}"></div>
+                                              <div class="col-2 d-flex justify-content-center"></div>
+                                              <div class="col-1 d-flex justify-content-end" id="del-${impact[i].id}"><div class="trash"><i class="fa fa-trash-o"></i></div></div>
+                                            </div>`;
+                    document.querySelector(`#ms-${milestone.id}`).appendChild(impact_row);
+                  }
+                }
+              })
           });
         })
     })

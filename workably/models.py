@@ -181,10 +181,10 @@ class Impact(models.Model):
     def serialize(self):
         return {
             "id": self.id,
-            "impact_type": self.impact_type,
+            "impact_type": self.impact_type.name,
             "plan_amount": self.plan_amount,
             "forecast_amount": self.forecast_amount,
-            "milestone": self.milestone
+            "milestone": self.milestone.id
         }
 
     def __str__(self):
