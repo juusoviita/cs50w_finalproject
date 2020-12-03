@@ -6,6 +6,7 @@
   border-width: 0.5px;
   border-radius: 6px;
   border-color: darkgray;
+  background-color: whitesmoke;
 }
 
 .edit:hover {
@@ -60,6 +61,15 @@ select {
   border-width: 0.5px;
   border-radius: 6px;
   border-color: darkgray;
+  width: 160px;
+}
+
+.input-desc {
+  border-style: solid;
+  border-width: 0.5px;
+  border-radius: 6px;
+  border-color: darkgray;
+  width: 100%;
 }
 
 .trash:hover {
