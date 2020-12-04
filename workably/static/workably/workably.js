@@ -155,6 +155,7 @@ function load_roadmap(roadmap_id) {
             document.querySelector("#milestone-list").appendChild(ms_row);
             document.getElementById(`act-${milestone.id}`).checked = milestone.realized;
             document.getElementById(`del-${milestone.id}`).addEventListener('click', () => del_milestone(milestone.id));
+
             // get and add impacts to the milestone div
             fetch(`/impacts/${milestone.id}`)
               .then(response => response.json())
@@ -318,13 +319,11 @@ function add_milestone(roadmap_id) {
   console.log(`Adding milestone to roadmap ${roadmap_id}`)
   // get the count of existing milestones and add one
   const ms_numbers = document.querySelectorAll('.ms-number');
-  console.log(ms_numbers);
   const new_ms_number = ms_numbers.length + 1;
-  console.log(new_ms_number);
   // add a new milestone to the page
   var ms_row = document.createElement('div');
   ms_row.classList.add("container");
-  ms_row.setAttribute("id", 'new-milestone')
+  ms_row.setAttribute("id", `new-milestone-${new_ms_number}`)
   ms_row.innerHTML = `<div class="row">
                         <div class="col-1"><small>#</small></div>
                         <div class="col-4"><small>Description</small></div>
@@ -335,11 +334,11 @@ function add_milestone(roadmap_id) {
                       </div>
                       <div class="row">
                         <div id="ms-${new_ms_number}" class="col-1"><div class="ms-number" id="num-${new_ms_number}">${new_ms_number}</div></div>
-                        <div class="col-4 d-flex justify-content-center"><input class="input-desc" type="text" id="new-desc"></div>
-                        <div class="col-2 d-flex justify-content-center"><input class="input-field" type="date" id="plan-date"></div>
+                        <div class="col-4 d-flex justify-content-center"><input class="input-desc" type="text" id="new-desc-${new_ms_number}"></div>
+                        <div class="col-2 d-flex justify-content-center"><input class="input-field" type="date" id="new-date-${new_ms_number}"></div>
                         <div class="col-2 d-flex justify-content-center"></div>
                         <div class="col-2 d-flex justify-content-center"></div>
-                        <div class="col-1 d-flex justify-content-center"></div>
+                        <div class="col-1 d-flex justify-content-center"><div class="trash" style="padding-right:15px"><i class="fa fa-trash-o" id="del-newms-${new_ms_number}"></i></div></div>
                       </div>
                       <div class="row">
                         <div class="col-1 d-flex justify-content-start"><input type="button" id="save-ms-${new_ms_number}" class="btn btn-primary btn-sm" value="Save"></div>
@@ -347,12 +346,52 @@ function add_milestone(roadmap_id) {
                         <div class="col-10 d-flex justify-content-center"></div>
                       </div>`;
   document.querySelector("#milestone-list").appendChild(ms_row);
-  document.getElementById(`save-ms-${new_ms_number}`).addEventListener('click', () => save_milestone(roadmap_id, new_ms_number));
+  // add the save functionality and disable the Save milestone button by default -> need to add description at least
+  var save_btn = document.getElementById(`save-ms-${new_ms_number}`);
+  save_btn.addEventListener('click', () => save_milestone(roadmap_id, new_ms_number));
+  save_btn.disabled = true;
+  document.querySelector(`#new-desc-${new_ms_number}`).onkeyup = () => {
+    if (document.querySelector(`#new-desc-${new_ms_number}`).value.length > 0) {
+      save_btn.disabled = false;
+    } else {
+      save_btn.disabled = true;
+    }
+  }
+  document.getElementById(`del-newms-${new_ms_number}`).addEventListener('click', () => del_protomilestone(new_ms_number));
   document.getElementById(`add-impact-${new_ms_number}`).addEventListener('click', () => add_impact(new_ms_number));
 }
 
 function save_milestone(roadmap_id, milestone_num) {
-  console.log(`Saving milestone #${milestone_num} on roadmap id ${roadmap_id}`)
+  var new_milestone = document.getElementById(`new-milestone-${milestone_num}`);
+  var desc = document.getElementById(`new-desc-${milestone_num}`).value;
+  var plan_date = document.getElementById(`new-date-${milestone_num}`).value;
+
+  // save the new milestone to the database using POST
+  fetch('/milestone', {
+    method: 'POST',
+    body: JSON.stringify({
+      number: milestone_num,
+      desc: desc,
+      plan_date: plan_date,
+      realized: false,
+      roadmap: roadmap_id
+    })
+  })
+    .then(response => response.json())
+    .then(result => {
+      // get the new milestone's id fromthe result
+      var milestone_id = result.id
+      console.log(milestone_id);
+      // check if the milestone has any impacts and if so, save those as well
+      const new_impacts = new_milestone.querySelectorAll('.impact-row');
+      const length = new_impacts.length;
+      // check first is length > 0
+      if (length > 0) {
+        for (i = 0; i < length; i++) {
+          console.log(new_impacts[i]);
+        }
+      }
+    })
 }
 
 function del_milestone(milestone_id) {
@@ -360,9 +399,51 @@ function del_milestone(milestone_id) {
 }
 
 function add_impact(ms_number) {
+  // check how many new impacts have been added and number the new one accordingly
   console.log(`Adding impact on milestone #${ms_number}`)
+  const imp_numbers = document.querySelectorAll('.imp-number');
+  const new_imp_number = imp_numbers.length + 1;
+  var impact_row = document.createElement('div');
+  impact_row.setAttribute("id", `new-impact-${new_imp_number}`)
+  impact_row.classList.add("impact-row")
+  impact_row.setAttribute("style", 'background-color:white;margin:2px;padding-top:5px')
+  impact_row.innerHTML = `<div class="row">
+                            <div class="col-1"><div class="imp-number"></div></div>
+                            <div class="col-4 d-flex justify-content-end"><select name="impact-type" id="impact-type-${new_imp_number}"></select></div>
+                            <div class="col-2 d-flex justify-content-center"><input class="input-field" type="number" id="plan-value-${new_imp_number}"></div>
+                            <div class="col-2 d-flex justify-content-center"></div>
+                            <div class="col-2 d-flex justify-content-center"></div>
+                            <div class="col-1 d-flex justify-content-end"><div class="trash" style="padding-right:15px"><i class="fa fa-trash-o" id="del-newimp-${new_imp_number}"></i></div></div>
+                          </div>`;
+  document.querySelector(`#new-milestone-${ms_number}`).appendChild(impact_row);
+  // get the impact types for the drop-down
+  fetch('/impact_types')
+    .then(response => response.json())
+    .then(types => {
+      var type_dropdown = document.getElementById(`impact-type-${new_imp_number}`);
+      const length = types.length;
+      for (i = 0; i < length; i++) {
+        var type_id = types[i].id;
+        var type_name = types[i].name;
+        type_dropdown.innerHTML += `<option value="$type-${type_id}">${type_name}</option>`;
+      }
+    })
+  document.getElementById(`del-newimp-${new_imp_number}`).addEventListener('click', () => del_protoimpact(new_imp_number))
 }
 
 function del_impact(impact_id) {
   console.log(`Deleting impact id ${impact_id}`)
+}
+
+function del_protomilestone(ms_number) {
+  console.log(`Deleting milestone prototype ${ms_number}`)
+  var impact_proto = document.getElementById(`new-milestone-${ms_number}`)
+  impact_proto.parentNode.removeChild(impact_proto);
+}
+
+
+function del_protoimpact(impact_number) {
+  console.log(`Deleting impact prototype ${impact_number}`)
+  var impact_proto = document.getElementById(`new-impact-${impact_number}`)
+  impact_proto.parentNode.removeChild(impact_proto);
 }

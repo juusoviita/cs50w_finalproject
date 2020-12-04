@@ -72,6 +72,34 @@ def milestones(request, roadmap_id):
         return JsonResponse([milestone.serialize() for milestone in milestones], safe=False)
 
 
+@csrf_exempt
+def milestone(request):
+    if request.method == "POST":
+        data = json.loads(request.body)
+
+        number = data.get("number", "")
+        description = data.get("desc", "")
+        plan_date = data.get("plan_date", "")
+        roadmap_id = data.get("roadmap", "")
+
+        roadmap = Roadmap.objects.get(pk=roadmap_id)
+
+        if plan_date == '':
+            milestone = Milestone(
+                number=number, description=description, roadmap=roadmap)
+        else:
+            milestone = Milestone(number=number, description=description,
+                                  plan_date=plan_date, roadmap=roadmap)
+
+        milestone.save()
+
+        # update the roadmaps info to reflect the changes
+        Roadmap.objects.filter(pk=roadmap_id).update(
+            last_updated=datetime.date.today(), last_updater=request.user)
+
+        return JsonResponse({"id": milestone.id}, safe=False)
+
+
 def impacts(request, milestone_id):
     if request.method == "GET":
         impacts = Impact.objects.filter(milestone__id=milestone_id)
@@ -83,6 +111,11 @@ def impacts(request, milestone_id):
             return JsonResponse([impact.serialize() for impact in impacts], safe=False)
 
     return JsonResponse({"result": "done"}, safe=False)
+
+
+def impact_types(request):
+    impact_types = ImpactType.objects.all()
+    return JsonResponse([impact_type.serialize() for impact_type in impact_types], safe=False)
 
 
 def user(request, user_id):

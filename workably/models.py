@@ -169,6 +169,12 @@ class ImpactType(models.Model):
     def __str__(self):
         return f"{self.name}"
 
+    def serialize(self):
+        return {
+            "id": self.id,
+            "name": self.name
+        }
+
 
 class Impact(models.Model):
     impact_type = models.ForeignKey(
