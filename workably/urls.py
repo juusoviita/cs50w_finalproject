@@ -17,6 +17,7 @@ urlpatterns = [
     path("profiles", views.profiles, name="get_profiles"),
     path("milestones/<int:roadmap_id>", views.milestones, name="get_milestones"),
     path("impacts/<int:milestone_id>", views.impacts, name="get_impact"),
+    path("postimpacts", views.post_impacts, name="post_impacts"),
     path("countries", views.country_list, name="countries"),
     path("regions", views.regions, name="regions"),
     path("impact_types", views.impact_types, name="impact_types"),

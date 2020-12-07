@@ -99,6 +99,20 @@ def milestone(request):
 
         return JsonResponse({"id": milestone.id}, safe=False)
 
+    elif request.method == "DELETE":
+        data = json.loads(request.body)
+        milestone_id = data.get("milestone_id", "")
+
+        milestone = Milestone.objects.get(pk=milestone_id)
+        roadmap_id = milestone.roadmap.id
+        milestone.delete()
+
+        # update the roadmaps info to reflect the changes
+        Roadmap.objects.filter(pk=roadmap_id).update(
+            last_updated=datetime.date.today(), last_updater=request.user)
+
+        return JsonResponse({"message": "Milestone deleted"})
+
 
 def impacts(request, milestone_id):
     if request.method == "GET":
@@ -106,11 +120,50 @@ def impacts(request, milestone_id):
         if len(impacts) == 0:
             return JsonResponse({"message": "no impacts"}, safe=False)
         else:
-            for impact in impacts:
-                print(impact)
             return JsonResponse([impact.serialize() for impact in impacts], safe=False)
 
     return JsonResponse({"result": "done"}, safe=False)
+
+
+@csrf_exempt
+def post_impacts(request):
+    if request.method == "POST":
+        data = json.loads(request.body)
+
+        milestone_id = data.get("milestone_id", "")
+        plan_amount = data.get("plan_amount", "")
+        impact_type = data.get("impact_type", "")
+
+        milestone = Milestone.objects.get(pk=milestone_id)
+        impact_type = ImpactType.objects.get(pk=impact_type)
+
+        if plan_amount == '':
+            impact = Impact(impact_type=impact_type, milestone=milestone)
+        else:
+            impact = Impact(impact_type=impact_type,
+                            plan_amount=plan_amount, milestone=milestone)
+
+        impact.save()
+
+        message = impact.id
+
+    if request.method == "DELETE":
+        data = json.loads(request.body)
+        impact_id = data.get("impact_id", "")
+
+        impact = Impact.objects.get(pk=impact_id)
+        milestone_id = impact.milestone.id
+        milestone = Milestone.objects.get(pk=milestone_id)
+        impact.delete()
+
+        message = "deleted"
+
+    # update roadmap's last_updated and last_updater fields as well
+    roadmap_id = milestone.roadmap.id
+    Roadmap.objects.filter(pk=roadmap_id).update(
+        last_updated=datetime.date.today(), last_updater=request.user)
+    print(message)
+    return JsonResponse({"id": message})
 
 
 def impact_types(request):
