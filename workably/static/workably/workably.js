@@ -152,7 +152,7 @@ function load_roadmap(roadmap_id) {
                                 <div class="row">
                                   <div id="ms-${milestone.number}" class="col-1"><div class="ms-number" id="num-${milestone.number}">${milestone.number}</div></div>
                                   <div class="col-4">${milestone.description}</div>
-                                  <div class="col-2 d-flex justify-content-center">${plan_date}</div>
+                                  <div class="col-2 d-flex justify-content-center" id="plan-date-${milestone.id}">${plan_date}</div>
                                   <div class="col-2 d-flex justify-content-center">${forecast_col}</div>
                                   <div class="col-2 d-flex justify-content-center" style="padding:8px;"><input type="checkbox" id="act-${milestone.id}"></div>
                                   <div class="col-1 d-flex justify-content-end"><div class="trash"><i class="fa fa-trash-o" id="del-${milestone.id}"></i></div></div>
@@ -163,18 +163,27 @@ function load_roadmap(roadmap_id) {
             document.querySelector("#milestone-list").appendChild(ms_row);
             document.getElementById(`act-${milestone.id}`).checked = milestone.realized;
             document.getElementById(`del-${milestone.id}`).addEventListener('click', () => del_milestone(milestone.id));
+            document.getElementById(`update-${milestone.id}`).addEventListener('click', () => save_changes(milestone.id));
             document.getElementById(`update-${milestone.id}`).style.display = 'none';
 
-            document.querySelector(`#fcst-date-${milestone.id}`).oninput = () => {
-              if (document.querySelector(`#fcst-date-${milestone.id}`).value.length > 0) {
-                document.getElementById(`update-${milestone.id}`).style.display = 'block';
-              } else {
-                document.getElementById(`update-${milestone.id}`).style.display = 'none';
+            // if the input in the fcst date field is changed or the act box is ticked/unticked, the Save button becomes visible 
+            var fcst_div = document.querySelector(`#fcst-date-${milestone.id}`);
+            // var fcst_value = document.querySelector(`#fcst-date-${milestone.id}`).value;
+
+            if (fcst_div != null) {
+              fcst_div.oninput = () => {
+                if (fcst_div.value == forecast_date) {
+                  document.getElementById(`update-${milestone.id}`).style.display = 'none';
+                } else {
+                  document.getElementById(`update-${milestone.id}`).style.display = 'block';
+                }
               }
             }
 
             document.querySelector(`#act-${milestone.id}`).oninput = () => {
-              if (document.querySelector(`#act-${milestone.id}`).value != milestone.realized) {
+              if (document.querySelector(`#act-${milestone.id}`).checked == milestone.realized) {
+                document.getElementById(`update-${milestone.id}`).style.display = 'none';
+              } else {
                 document.getElementById(`update-${milestone.id}`).style.display = 'block';
               }
             }
@@ -187,7 +196,6 @@ function load_roadmap(roadmap_id) {
                   console.log(impact);
                 } else {
                   var length = Object.keys(impact).length;
-                  console.log(impact);
                   for (i = 0; i < length; i++) {
                     if (impact[i].plan_amount == null) {
                       var plan_amount = '';
@@ -201,18 +209,27 @@ function load_roadmap(roadmap_id) {
                     }
                     const impact_id = impact[i].id;
                     var impact_row = document.createElement('div');
-                    impact_row.setAttribute("id", `imp-${impact_id}`);
-                    impact_row.setAttribute("style", 'background-color:white;margin:2px;padding-top:5px')
+                    impact_row.setAttribute("id", `${impact_id}`);
+                    impact_row.classList.add("impact-row");
                     impact_row.innerHTML = `<div class="row">
-                                              <div class="col-1"></div>
-                                              <div class="col-4 d-flex justify-content-end">${impact[i].impact_type}</div>
-                                              <div class="col-2 d-flex justify-content-center">${plan_amount}</div>
+                                              <div class="col-1"><div id="imp-${impact_id}" hidden>${impact_id}</div></div>
+                                              <div class="col-4 d-flex justify-content-end" id="imp-type-${impact_id}">${impact[i].impact_type}</div>
+                                              <div class="col-2 d-flex justify-content-center" id="plan-value-${impact_id}">${plan_amount}</div>
                                               <div class="col-2 d-flex justify-content-center"><input class="input-field" type="number" id="fcst-value-${impact_id}" value="${forecast_amount}"></div>
                                               <div class="col-2 d-flex justify-content-center"></div>
-                                              <div class="col-1 d-flex justify-content-end"><div class="trash" style="padding-right:15px"><i class="fa fa-trash-o" id="del-${impact_id}"></i></div></div>
+                                              <div class="col-1 d-flex justify-content-end"></div>
                                             </div>`;
                     document.querySelector(`#ms-${milestone.id}`).appendChild(impact_row);
-                    document.getElementById(`del-${impact_id}`).addEventListener('click', () => del_impact(`${impact_id}`));
+
+                    // checks whether changes have been made to the forecast value and if so, shows the Save button
+                    const fcst_input = document.getElementById(`fcst-value-${impact_id}`);
+                    fcst_input.oninput = () => {
+                      if (fcst_input.value != forecast_amount) {
+                        document.getElementById(`update-${milestone.id}`).style.display = 'block';
+                      } else {
+                        document.getElementById(`update-${milestone.id}`).style.display = 'none';
+                      }
+                    }
                   }
                 }
               })
@@ -385,6 +402,7 @@ function add_milestone(roadmap_id) {
 }
 
 function save_milestone(roadmap_id, milestone_num) {
+  // get the variables from the milestone div
   var new_milestone = document.getElementById(`new-milestone-${milestone_num}`);
   var desc = document.getElementById(`new-desc-${milestone_num}`).value;
   var plan_date = document.getElementById(`new-date-${milestone_num}`).value;
@@ -413,11 +431,15 @@ function save_milestone(roadmap_id, milestone_num) {
       var date_div = document.getElementById(`new-date-${milestone_num}`).parentElement;
       date_div.innerHTML = '';
       date_div.innerHTML = `${plan_date}`;
+
       document.getElementById(`new-fcst-${milestone_num}`).innerHTML = `<input type="date" class="input-field" id="fcst-date-${milestone_id}">`
       document.getElementById(`new-act-${milestone_num}`).innerHTML = `<div class="col-2 d-flex justify-content-center" style="padding:8px;"><input type="checkbox" id="act-${milestone_id}" value="false"></div>`;
       document.getElementById(`new-trash-${milestone_num}`).innerHTML = '';
       document.getElementById(`new-trash-${milestone_num}`).innerHTML = `<div class="col-1 d-flex justify-content-end"><div class="trash"><i class="fa fa-trash-o" id="del-${milestone_id}"></i></div></div>`
       document.getElementById('button-row').innerHTML = `<div class="col-1 d-flex justify-content-start"><input type="button" id="update-${milestone_id}" class="btn btn-primary btn-sm" value="Save"></div>`;
+      document.getElementById(`update-${milestone_id}`).style.display = 'none';
+      document.getElementById(`update-${milestone_id}`).addEventListener('click', () => save_changes(milestone_id));
+
       // check if the milestone has any impacts and if so, save those as well
       const new_impacts = new_milestone.querySelectorAll('.impact-row');
       const length = new_impacts.length;
@@ -425,11 +447,10 @@ function save_milestone(roadmap_id, milestone_num) {
         for (i = 0; i < length; i++) {
           var j = i + 1;
           var impact_type = document.getElementById(`impact-type-${j}`).value;
-          var sel = document.getElementById(`impact-type-${j}`).innerHTML;
-          var impact_text = sel.options[sel.selectedIndex].text;
           var plan_amount = document.getElementById(`plan-value-${j}`).value;
-
-          console.log(impact_text);
+          // after getting the values, delete the new-impact row
+          var temp_impact = document.getElementById(`new-impact-${j}`);
+          temp_impact.parentNode.removeChild(temp_impact);
 
           // save the new milestone's impacts using POST
           fetch('/postimpacts', {
@@ -443,6 +464,8 @@ function save_milestone(roadmap_id, milestone_num) {
             .then(response => response.json())
             .then(result => {
               const impact_id = result.id;
+              const impact_text = result.impact_name;
+              const plan_amount = result.plan_amount;
               var impact_row = document.createElement('div');
               impact_row.setAttribute("id", `imp-${impact_id}`);
               impact_row.setAttribute("style", 'background-color:white;margin:2px;padding-top:5px')
@@ -452,12 +475,9 @@ function save_milestone(roadmap_id, milestone_num) {
                                         <div class="col-2 d-flex justify-content-center">${plan_amount}</div>
                                         <div class="col-2 d-flex justify-content-center"><input class="input-field" type="number" id="fcst-value-${impact_id}" value=""></div>
                                         <div class="col-2 d-flex justify-content-center"></div>
-                                        <div class="col-1 d-flex justify-content-end"><div class="trash" style="padding-right:15px"><i class="fa fa-trash-o" id="del-${impact_id}"></i></div></div>
+                                        <div class="col-1 d-flex justify-content-end"></div>
                                       </div>`;
               document.querySelector(`#new-milestone-${milestone_num}`).appendChild(impact_row);
-              document.getElementById(`del-${impact_id}`).addEventListener('click', () => del_impact(`${impact_id}`));
-              var temp_impact = document.getElementById(`new-impact-${j}`)
-              temp_impact.parentNode.removeChild(impact);
             })
         }
       }
@@ -465,19 +485,24 @@ function save_milestone(roadmap_id, milestone_num) {
 }
 
 function del_milestone(milestone_id) {
-  var milestone = document.getElementById(`ms-${milestone_id}`)
-  milestone.parentNode.removeChild(milestone);
+  var confirmation = confirm("Are you sure you want to delete the milestone?")
+  if (confirmation == true) {
+    var milestone = document.getElementById(`ms-${milestone_id}`)
+    milestone.parentNode.removeChild(milestone);
 
-  fetch('/milestone', {
-    method: 'DELETE',
-    body: JSON.stringify({
-      milestone_id: milestone_id
+    fetch('/milestone', {
+      method: 'DELETE',
+      body: JSON.stringify({
+        milestone_id: milestone_id
+      })
     })
-  })
-    .then(response => response.json())
-    .then(result => {
-      console.log(result);
-    })
+      .then(response => response.json())
+      .then(result => {
+        console.log(result);
+      })
+  } else {
+    console.log("You pressed cancel");
+  }
 }
 
 function add_impact(ms_number) {
@@ -488,7 +513,6 @@ function add_impact(ms_number) {
   var impact_row = document.createElement('div');
   impact_row.setAttribute("id", `new-impact-${new_imp_number}`)
   impact_row.classList.add("impact-row")
-  impact_row.setAttribute("style", 'background-color:white;margin:2px;padding-top:5px')
   impact_row.innerHTML = `<div class="row">
                             <div class="col-1"><div class="imp-number"></div></div>
                             <div class="col-4 d-flex justify-content-end"><select name="impact-type" id="impact-type-${new_imp_number}"></select></div>
@@ -514,25 +538,78 @@ function add_impact(ms_number) {
 }
 
 function del_impact(impact_id) {
-  var impact = document.getElementById(`imp-${impact_id}`)
-  impact.parentNode.removeChild(impact);
+  var conf = confirm("Are you sure you want to delete the milestone?")
+  if (conf == true) {
+    var impact = document.getElementById(`imp-${impact_id}`)
+    impact.parentNode.removeChild(impact);
 
-  fetch('/postimpacts', {
-    method: 'DELETE',
+    fetch('/postimpacts', {
+      method: 'DELETE',
+      body: JSON.stringify({
+        impact_id: impact_id
+      })
+    })
+      .then(response => response.json())
+      .then(result => {
+        console.log(result);
+      })
+  }
+}
+
+function save_changes(milestone_id) {
+  console.log(`Saving changes to milestone ${milestone_id}`)
+  // get the forecast date and actual status from the div
+  var plan_date = document.getElementById(`plan-date-${milestone_id}`).innerHTML;
+  var fcst_date = document.getElementById(`fcst-date-${milestone_id}`).value;
+  var realized = document.getElementById(`act-${milestone_id}`).checked;
+
+  // PUT changes to the milestone
+  fetch('/milestone', {
+    method: 'PUT',
     body: JSON.stringify({
-      impact_id: impact_id
+      milestone_id: milestone_id,
+      plan_date: plan_date,
+      fcst_date: fcst_date,
+      realized: realized,
     })
   })
     .then(response => response.json())
     .then(result => {
-      console.log(result);
+      // get the new milestone's id from the result
+      var milestone_realized = result.realized;
+
+      // if milestone has impact-rows, loop through those and save changes using PUT
+      var milestone_div = document.getElementById(`ms-${milestone_id}`);
+      const impact_rows = milestone_div.querySelectorAll('.impact-row');
+      const length = impact_rows.length;
+      if (length > 0) {
+        for (i = 0; i < length; i++) {
+          const impact_id = parseInt(impact_rows[i].id);
+          const plan_value = parseInt(document.getElementById(`plan-value-${impact_id}`).innerHTML);
+          const fcst_value = parseInt(document.getElementById(`fcst-value-${impact_id}`).value);
+          const imp_type = document.getElementById(`imp-type-${impact_id}`).innerHTML;
+          console.log(imp_type);
+          // PUT the changes to the impact
+          fetch('/postimpacts', {
+            method: 'PUT',
+            body: JSON.stringify({
+              impact_id: impact_id,
+              imp_type: imp_type,
+              plan_value: plan_value,
+              fcst_value: fcst_value,
+              milestone_id: milestone_id,
+              realized: milestone_realized,
+            })
+          })
+            .then(response => response.json())
+            .then(result => {
+              console.log(result);
+            })
+        }
+      }
     })
 }
 
-function save_changes(roadmap_id) {
-  console.log(`Saving changes to roadmap ${roadmap_id}`)
-  // load_roadmap(roadmap_id);
-}
 
 function del_protomilestone(ms_number) {
   console.log(`Deleting milestone prototype ${ms_number}`)

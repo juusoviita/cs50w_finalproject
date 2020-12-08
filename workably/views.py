@@ -99,6 +99,19 @@ def milestone(request):
 
         return JsonResponse({"id": milestone.id}, safe=False)
 
+    elif request.method == "PUT":
+        data = json.loads(request.body)
+        milestone_id = data.get("milestone_id", "")
+        realized = data.get("realized", "")
+        forecast_date = data.get("fcst_date", "")
+        if forecast_date == '':
+            forecast_date = data.get("plan_date", "")
+
+        Milestone.objects.filter(pk=milestone_id).update(
+            forecast_date=forecast_date, realized=realized)
+
+        return JsonResponse({"realized": realized}, safe=False)
+
     elif request.method == "DELETE":
         data = json.loads(request.body)
         milestone_id = data.get("milestone_id", "")
@@ -146,6 +159,9 @@ def post_impacts(request):
         impact.save()
 
         message = impact.id
+        impact_name = impact_type.name
+        forecast_amount = ''
+        impact_type = ''
 
     if request.method == "DELETE":
         data = json.loads(request.body)
@@ -157,13 +173,30 @@ def post_impacts(request):
         impact.delete()
 
         message = "deleted"
+        impact_name = ''
+        plan_amount = ''
+        forecast_amount = ''
+        impact_type = ''
+
+    if request.method == "PUT":
+        data = json.loads(request.body)
+        impact_id = data.get("impact_id", "")
+        impact_name = data.get("imp_type", "")
+        plan_amount = data.get("plan_value", "")
+        forecast_amount = data.get("fcst_value", "")
+        milestone_id = data.get("milestone_id", "")
+
+        Impact.objects.filter(pk=impact_id).update(
+            plan_amount=plan_amount, forecast_amount=forecast_amount)
+
+        milestone = Milestone.objects.get(pk=milestone_id)
+        message = impact_id
 
     # update roadmap's last_updated and last_updater fields as well
     roadmap_id = milestone.roadmap.id
     Roadmap.objects.filter(pk=roadmap_id).update(
         last_updated=datetime.date.today(), last_updater=request.user)
-    print(message)
-    return JsonResponse({"id": message})
+    return JsonResponse({"id": message, "impact_name": impact_name, "plan_amount": plan_amount, "forecast_amount": forecast_amount})
 
 
 def impact_types(request):
