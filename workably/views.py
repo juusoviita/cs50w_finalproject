@@ -162,6 +162,7 @@ def post_impacts(request):
         impact_name = impact_type.name
         forecast_amount = ''
         impact_type = ''
+        realized = ''
 
     if request.method == "DELETE":
         data = json.loads(request.body)
@@ -177,6 +178,7 @@ def post_impacts(request):
         plan_amount = ''
         forecast_amount = ''
         impact_type = ''
+        realized = ''
 
     if request.method == "PUT":
         data = json.loads(request.body)
@@ -184,6 +186,7 @@ def post_impacts(request):
         impact_name = data.get("imp_type", "")
         plan_amount = data.get("plan_value", "")
         forecast_amount = data.get("fcst_value", "")
+        realized = data.get("realized", "")
         milestone_id = data.get("milestone_id", "")
 
         Impact.objects.filter(pk=impact_id).update(
@@ -196,7 +199,7 @@ def post_impacts(request):
     roadmap_id = milestone.roadmap.id
     Roadmap.objects.filter(pk=roadmap_id).update(
         last_updated=datetime.date.today(), last_updater=request.user)
-    return JsonResponse({"id": message, "impact_name": impact_name, "plan_amount": plan_amount, "forecast_amount": forecast_amount})
+    return JsonResponse({"id": message, "impact_name": impact_name, "plan_amount": plan_amount, "forecast_amount": forecast_amount, "realized": realized})
 
 
 def impact_types(request):

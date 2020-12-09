@@ -577,6 +577,17 @@ function save_changes(milestone_id) {
     .then(result => {
       // get the new milestone's id from the result
       var milestone_realized = result.realized;
+      // if the milestone has not realized
+      document.getElementById(`fcst-date-${milestone_id}`).setAttribute('value', fcst_date);
+      // add the normal functionality to the the update button                
+      const fcst_input = document.getElementById(`fcst-date-${milestone_id}`);
+      fcst_input.oninput = () => {
+        if (fcst_input.value != result.forecast_amount) {
+          document.getElementById(`update-${milestone_id}`).style.display = 'block';
+        } else {
+          document.getElementById(`update-${milestone_id}`).style.display = 'none';
+        }
+      }
 
       // if milestone has impact-rows, loop through those and save changes using PUT
       var milestone_div = document.getElementById(`ms-${milestone_id}`);
@@ -603,10 +614,26 @@ function save_changes(milestone_id) {
           })
             .then(response => response.json())
             .then(result => {
-              console.log(result);
+              if (result.realized == false) {
+                // if milestone is not done, update the value of the fcst field
+                document.getElementById(`fcst-value-${result.id}`).setAttribute('value', result.forecast_amount)
+                // add the normal functionality to the the update button                
+                const fcst_input = document.getElementById(`fcst-value-${result.id}`);
+                fcst_input.oninput = () => {
+                  if (fcst_input.value != result.forecast_amount) {
+                    document.getElementById(`update-${milestone_id}`).style.display = 'block';
+                  } else {
+                    document.getElementById(`update-${milestone_id}`).style.display = 'none';
+                  }
+                }
+              } else {
+                console.log(result);
+              }
             })
         }
       }
+      // hide the update button
+      document.getElementById(`update-${milestone_id}`).style.display = 'none';
     })
 }
 
