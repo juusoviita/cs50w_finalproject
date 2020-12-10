@@ -220,6 +220,31 @@ def profiles(request):
     return JsonResponse([profile.serialize() for profile in profiles], safe=False)
 
 
+def profile(request, username):
+    user = User.objects.get(username=username)
+    profile = Profile.objects.get(user=user)
+
+    return JsonResponse({"id": user.id, "username": user.username, "email": user.email, "last_login": user.last_login, "first_name": profile.first_name, "last_name": profile.last_name, "phone": profile.phone, "role": profile.role.name}, safe=False)
+
+
+@csrf_exempt
+def edit_profile(request):
+    if request.method == "PUT":
+        data = json.loads(request.body)
+        user_id = data.get("user_id", "")
+        username = data.get("username", "")
+        first_name = data.get("firstname", "")
+        last_name = data.get("lastname", "")
+        email = data.get("email", "")
+        phone = data.get("phone", "")
+
+        Profile.objects.filter(user_id=user_id).update(
+            first_name=first_name, last_name=last_name, phone=phone)
+        User.objects.filter(pk=user_id).update(email=email)
+
+        return JsonResponse({"message": "Profile updated"})
+
+
 def regions(request):
     regions = Roadmap.objects.order_by('region').values('region').distinct()
     regiondict = {}

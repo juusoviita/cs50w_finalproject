@@ -1,10 +1,11 @@
 document.addEventListener('DOMContentLoaded', function () {
-  // document.querySelector('#roadmap-dropdown').addEventListener('click', () => load_roadmaps())
-
   document.querySelector('#edit-view').style.display = 'none';
   document.querySelector("#roadmap-view").style.display = 'none';
   document.querySelector("#milestone-list").style.display = 'none';
+  document.querySelector("#profile-view").style.display = 'none';
 
+  var username = document.getElementById('username').innerHTML;
+  document.getElementById('username').addEventListener('click', () => view_profile(username));
 
   // if user is a roadmap owner, i.e. there's a roadmap dropdown menu in the navbar,
   // query all the roadmap names and add them to the dropdown and link them to the load_roadmap function
@@ -139,7 +140,10 @@ function load_roadmap(roadmap_id) {
             if (milestone.realized == false) {
               var forecast_col = `<input type="date" class="input-field" id="fcst-date-${milestone.id}" value="${forecast_date}">`
             } else {
-              var forecast_col = forecast_date
+              if (forecast_date == '') {
+                forecast_date = milestone.plan_date;
+              }
+              var forecast_col = forecast_date;
             }
             ms_row.innerHTML = `<div class="row">
                                   <div class="col-1"><small>#</small></div>
@@ -153,7 +157,7 @@ function load_roadmap(roadmap_id) {
                                   <div id="ms-${milestone.number}" class="col-1"><div class="ms-number" id="num-${milestone.number}">${milestone.number}</div></div>
                                   <div class="col-4">${milestone.description}</div>
                                   <div class="col-2 d-flex justify-content-center" id="plan-date-${milestone.id}">${plan_date}</div>
-                                  <div class="col-2 d-flex justify-content-center">${forecast_col}</div>
+                                  <div class="col-2 d-flex justify-content-center" id="fcst-date-div-${milestone.id}">${forecast_col}</div>
                                   <div class="col-2 d-flex justify-content-center" style="padding:8px;"><input type="checkbox" id="act-${milestone.id}"></div>
                                   <div class="col-1 d-flex justify-content-end"><div class="trash"><i class="fa fa-trash-o" id="del-${milestone.id}"></i></div></div>
                                 </div>
@@ -180,12 +184,17 @@ function load_roadmap(roadmap_id) {
               }
             }
 
-            document.querySelector(`#act-${milestone.id}`).oninput = () => {
-              if (document.querySelector(`#act-${milestone.id}`).checked == milestone.realized) {
-                document.getElementById(`update-${milestone.id}`).style.display = 'none';
-              } else {
-                document.getElementById(`update-${milestone.id}`).style.display = 'block';
+            // if milestone has not realized, add the update functionality, else disable the checkbox 
+            if (milestone.realized == false) {
+              document.querySelector(`#act-${milestone.id}`).oninput = () => {
+                if (document.querySelector(`#act-${milestone.id}`).checked == milestone.realized) {
+                  document.getElementById(`update-${milestone.id}`).style.display = 'none';
+                } else {
+                  document.getElementById(`update-${milestone.id}`).style.display = 'block';
+                }
               }
+            } else {
+              document.querySelector(`#act-${milestone.id}`).disabled = true;
             }
 
             // get and add impacts to the milestone div
@@ -211,23 +220,36 @@ function load_roadmap(roadmap_id) {
                     var impact_row = document.createElement('div');
                     impact_row.setAttribute("id", `${impact_id}`);
                     impact_row.classList.add("impact-row");
+
+                    if (milestone.realized == false) {
+                      var forecast_value_col = `<input class="input-field" type="number" id="fcst-value-${impact_id}" value="${forecast_amount}"></input>`
+                    } else {
+                      if (forecast_amount == '') {
+                        var forecast_value_col = plan_amount;
+                      } else {
+                        var forecast_value_col = forecast_amount;
+                      }
+                    }
+
                     impact_row.innerHTML = `<div class="row">
                                               <div class="col-1"><div id="imp-${impact_id}" hidden>${impact_id}</div></div>
                                               <div class="col-4 d-flex justify-content-end" id="imp-type-${impact_id}">${impact[i].impact_type}</div>
                                               <div class="col-2 d-flex justify-content-center" id="plan-value-${impact_id}">${plan_amount}</div>
-                                              <div class="col-2 d-flex justify-content-center"><input class="input-field" type="number" id="fcst-value-${impact_id}" value="${forecast_amount}"></div>
+                                              <div class="col-2 d-flex justify-content-center" id="fcst-value-div-${impact_id}">${forecast_value_col}</div>
                                               <div class="col-2 d-flex justify-content-center"></div>
                                               <div class="col-1 d-flex justify-content-end"></div>
                                             </div>`;
                     document.querySelector(`#ms-${milestone.id}`).appendChild(impact_row);
 
                     // checks whether changes have been made to the forecast value and if so, shows the Save button
-                    const fcst_input = document.getElementById(`fcst-value-${impact_id}`);
-                    fcst_input.oninput = () => {
-                      if (fcst_input.value != forecast_amount) {
-                        document.getElementById(`update-${milestone.id}`).style.display = 'block';
-                      } else {
-                        document.getElementById(`update-${milestone.id}`).style.display = 'none';
+                    if (milestone.realized == false) {
+                      const fcst_input = document.getElementById(`fcst-value-${impact_id}`);
+                      fcst_input.oninput = () => {
+                        if (fcst_input.value != forecast_amount) {
+                          document.getElementById(`update-${milestone.id}`).style.display = 'block';
+                        } else {
+                          document.getElementById(`update-${milestone.id}`).style.display = 'none';
+                        }
                       }
                     }
                   }
@@ -557,7 +579,6 @@ function del_impact(impact_id) {
 }
 
 function save_changes(milestone_id) {
-  console.log(`Saving changes to milestone ${milestone_id}`)
   // get the forecast date and actual status from the div
   var plan_date = document.getElementById(`plan-date-${milestone_id}`).innerHTML;
   var fcst_date = document.getElementById(`fcst-date-${milestone_id}`).value;
@@ -575,18 +596,29 @@ function save_changes(milestone_id) {
   })
     .then(response => response.json())
     .then(result => {
-      // get the new milestone's id from the result
-      var milestone_realized = result.realized;
-      // if the milestone has not realized
-      document.getElementById(`fcst-date-${milestone_id}`).setAttribute('value', fcst_date);
-      // add the normal functionality to the the update button                
-      const fcst_input = document.getElementById(`fcst-date-${milestone_id}`);
-      fcst_input.oninput = () => {
-        if (fcst_input.value != result.forecast_amount) {
-          document.getElementById(`update-${milestone_id}`).style.display = 'block';
-        } else {
-          document.getElementById(`update-${milestone_id}`).style.display = 'none';
+      if (realized == false) {
+        // get the new milestone's id from the result
+        var milestone_realized = result.realized;
+        // if the milestone has not realized
+        document.getElementById(`fcst-date-${milestone_id}`).setAttribute('value', fcst_date);
+        // add the normal functionality to the the update button                
+        const fcst_input = document.getElementById(`fcst-date-${milestone_id}`);
+        fcst_input.oninput = () => {
+          if (fcst_input.value != result.forecast_amount) {
+            document.getElementById(`update-${milestone_id}`).style.display = 'block';
+          } else {
+            document.getElementById(`update-${milestone_id}`).style.display = 'none';
+          }
         }
+      } else {
+        // fix the forecast date value and disable the checkbox to signify that this milestone is now done
+        if (fcst_date == '') {
+          document.getElementById(`fcst-date-div-${milestone_id}`).innerHTML = plan_date;
+        } else {
+          document.getElementById(`fcst-date-div-${milestone_id}`).innerHTML = fcst_date;
+        }
+        document.getElementById(`act-${milestone_id}`).checked = true;
+        document.getElementById(`act-${milestone_id}`).disabled = true;
       }
 
       // if milestone has impact-rows, loop through those and save changes using PUT
@@ -599,7 +631,6 @@ function save_changes(milestone_id) {
           const plan_value = parseInt(document.getElementById(`plan-value-${impact_id}`).innerHTML);
           const fcst_value = parseInt(document.getElementById(`fcst-value-${impact_id}`).value);
           const imp_type = document.getElementById(`imp-type-${impact_id}`).innerHTML;
-          console.log(imp_type);
           // PUT the changes to the impact
           fetch('/postimpacts', {
             method: 'PUT',
@@ -614,9 +645,13 @@ function save_changes(milestone_id) {
           })
             .then(response => response.json())
             .then(result => {
-              if (result.realized == false) {
+              if (milestone_realized == false) {
                 // if milestone is not done, update the value of the fcst field
-                document.getElementById(`fcst-value-${result.id}`).setAttribute('value', result.forecast_amount)
+                if (result.forecast_amount == null) {
+                  document.getElementById(`fcst-value-${result.id}`).setAttribute('value', 0)
+                } else {
+                  document.getElementById(`fcst-value-${result.id}`).setAttribute('value', result.forecast_amount)
+                }
                 // add the normal functionality to the the update button                
                 const fcst_input = document.getElementById(`fcst-value-${result.id}`);
                 fcst_input.oninput = () => {
@@ -627,7 +662,11 @@ function save_changes(milestone_id) {
                   }
                 }
               } else {
-                console.log(result);
+                if (result.forecast_amount == '') {
+                  document.getElementById(`fcst-value-div-${impact_id}`).innerHTML = plan_value;
+                } else {
+                  document.getElementById(`fcst-value-div-${impact_id}`).innerHTML = result.forecast_amount;
+                }
               }
             })
         }
@@ -649,4 +688,117 @@ function del_protoimpact(impact_number) {
   console.log(`Deleting impact prototype ${impact_number}`)
   var impact_proto = document.getElementById(`new-impact-${impact_number}`)
   impact_proto.parentNode.removeChild(impact_proto);
+}
+
+
+function view_profile(username) {
+  if (document.querySelector('#mgmt-view') != null) {
+    document.querySelector('#mgmt-view').style.display = 'none';
+  }
+  document.querySelector('#edit-view').style.display = 'none';
+  document.querySelector("#roadmap-view").style.display = 'none';
+  document.querySelector("#milestone-list").style.display = 'none';
+  document.querySelector("#profile-view").style.display = 'block';
+  document.querySelector("#password-change").style.display = 'none';
+
+  document.querySelector("#username-view").innerHTML = `<h5>Profile view: ${username}</h5>`;
+  document.getElementById('save-prof-changes').disabled = true;
+
+  document.getElementById('pw-change').addEventListener('click', () => change_password());
+
+  //save the form fields to variables
+  var userid = document.querySelector("#user-id");
+  var firstname = document.querySelector("#firstname");
+  var lastname = document.querySelector("#lastname");
+  var email = document.querySelector("#email")
+  var phone = document.querySelector("#phone")
+
+  fetch(`/profile/${username}`)
+    .then(response => response.json())
+    .then(result => {
+      firstname.setAttribute("value", result.first_name);
+      lastname.setAttribute("value", result.last_name);
+      email.setAttribute("value", result.email);
+      phone.setAttribute("value", result.phone);
+
+      // attach the save changes functionality to the button and abel it if changes are made
+      var save_prof_changes = document.getElementById('save-prof-changes');
+      save_prof_changes.addEventListener('click', () => save_profile(username));
+      firstname.oninput = () => {
+        if (firstname.value != result.first_name && firstname.value.length > 0) {
+          save_prof_changes.disabled = false;
+        } else {
+          save_prof_changes.disabled = true;
+        }
+      }
+      lastname.oninput = () => {
+        if (lastname.value != result.last_name && lastname.value.length > 0) {
+          save_prof_changes.disabled = false;
+        } else {
+          save_prof_changes.disabled = true;
+        }
+      }
+      email.oninput = () => {
+        if (email.value != result.email && email.value.length > 0) {
+          save_prof_changes.disabled = false;
+        } else {
+          save_prof_changes.disabled = true;
+        }
+      }
+      phone.oninput = () => {
+        if (phone.value != result.phone && phone.value.length > 0) {
+          save_prof_changes.disabled = false;
+        } else {
+          save_prof_changes.disabled = true;
+        }
+      }
+      if (result.last_login == null) {
+        var last_login = '';
+      } else {
+        var last_login = result.last_login;
+      }
+
+      var row = document.createElement('div');
+      row.classList.add("container-fluid");
+      row.innerHTML = `<div class="row">
+                        <div class="col-3" style="color:gray;text-align:right;font-weight:bold">Last login:</div>
+                        <div class="col">${result.last_login}</div>
+                      </div>
+                      <div class="row">
+                        <div class="col-3" style="color:gray;text-align:right;font-weight:bold">Role:</div>
+                        <div class="col">${result.role}</div>
+                      </div>
+                    </div>`;
+      document.querySelector('#user-info').appendChild(row);
+      // get all the streams/roadmaps the user is an owner of
+    })
+}
+
+function save_profile(username) {
+  var user_id = document.querySelector("#user-id").innerHTML;
+  var firstname = document.querySelector("#firstname").value;
+  var lastname = document.querySelector("#lastname").value;
+  var email = document.querySelector("#email").value;
+  var phone = document.querySelector("#phone").value;
+
+  fetch('/editprofile', {
+    method: 'PUT',
+    body: JSON.stringify({
+      user_id: user_id,
+      username: username,
+      firstname: firstname,
+      lastname: lastname,
+      email: email,
+      phone: phone
+    })
+  })
+    .then(response => response.json())
+    .then(result => {
+      console.log(result.message);
+      view_profile(username);
+    })
+}
+
+function change_password() {
+  document.querySelector("#password-change").style.display = 'block';
 }

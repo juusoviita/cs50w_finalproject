@@ -12,6 +12,38 @@
 <div id="roadmap-view"></div>
 <div id="edit-view"></div>
 <div id="milestone-list"></div>
+<div id="profile-view">
+  <div class="confainer">
+    <div class="row">
+      <div class="col-4">
+        <div id="username-view"></div>
+        <div id="user-id" hidden></div>
+        <form>
+          <label for="firstname">First name:</label><br>
+          <input type="text" id="firstname" name="firstname" class="input-field"><br>
+          <label for="lastname">Last name:</label><br>
+          <input type="text" id="lastname" name="lastname" class="input-field"><br>
+          <label for="email">Email:</label><br>
+          <input type="text" id="email" name="email" class="input-field"><br>
+          <label for="phone">Phone:</label><br>
+          <input type="text" id="phone" name="phone" class="input-field"><br>
+          <input type="submit" id="save-prof-changes" class="btn btn-primary" value="Save Changes"><br>
+        </form>
+        <br>
+        <p id="pw-change" class="edit" style="margin:15px;color:blue">Change your password</p>
+      </div>
+      <div class="col align-self-start">
+        <br>
+        <br>
+        <div id="user-info"></div>
+      </div>
+      <div class="col-4">
+        Change Password view?
+        <div id="password-change">Here's the form to change your password</div>
+      </div>
+    </div>
+  </div>
+</div>
 
 {% else %}
 Please <a href="{% url 'login' %}">Login.</a><br>

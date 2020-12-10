@@ -14,7 +14,7 @@
   cursor: pointer;
 }
 
-#save-changes, #add-milestone {
+#save-changes, #add-milestone, #save-prof-changes {
   margin: 5px;
 }
 
@@ -26,11 +26,25 @@
 .impact-row {
   background-color:white;
   margin:2px;
-  padding-top:5px
+  padding-top: 2px;
 }
 
 input {
   margin-bottom: 5px;
+}
+
+label {
+  margin-top: 5px;
+  margin-bottom: 0px;
+}
+
+form {
+  margin: 15px;
+}
+
+#username-view {
+  margin-left: 15px;
+  margin-top: 15px;
 }
 
 #edit-name {
@@ -72,6 +86,7 @@ select {
   border-radius: 6px;
   border-color: darkgray;
   width: 160px;
+  margin-top: 2px;
 }
 
 .input-desc {
