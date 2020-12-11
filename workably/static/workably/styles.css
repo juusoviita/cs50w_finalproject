@@ -97,11 +97,26 @@ select {
   width: 100%;
 }
 
-.trash:hover {
+.message {
+  margin: 10px;
+}
+
+#close {
+  color: gray;
+}
+
+.trash:hover, #close:hover {
   cursor: pointer;
   color: crimson;
 }
 
-.message {
-  margin: 10px;
+h6 {
+  margin-top: 40px;
+  margin-bottom: 15px;
+}
+
+.prof-rm:hover {
+  text-decoration: underline;
+  color: blue;
+  cursor: pointer;
 }

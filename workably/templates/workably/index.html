@@ -44,7 +44,8 @@
           <div id="pw-message"></div>
           <form action="">
             {% csrf_token %}
-            <label for="old-password">Old password:</label><br>
+            <label for="old-password">Old password:</label><i id="close" class="fa fa-close"
+              style="margin-left:160px;"></i><br>
             <input type="password" id="old-password" name="old-password" class="input-field"><br>
             <label for="new-password">New password:</label><br>
             <input type="password" id="new-password" name="new-password" class="input-field"><br>

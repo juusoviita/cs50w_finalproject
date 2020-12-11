@@ -31,6 +31,7 @@ document.addEventListener('DOMContentLoaded', function () {
 // first loads the roadmaps information, then loads the milestones and impacts
 function load_roadmap(roadmap_id) {
   document.querySelector('#edit-view').style.display = 'none';
+  document.querySelector('#profile-view').style.display = 'none';
   document.querySelector("#roadmap-view").style.display = 'block';
   document.querySelector("#milestone-list").style.display = 'block';
   document.querySelector("#roadmap-view").innerHTML = '';
@@ -702,6 +703,7 @@ function view_profile(username) {
   document.querySelector("#password-change").style.display = 'none';
 
   document.querySelector("#username-view").innerHTML = `<h5>Profile view: ${username}</h5>`;
+  document.querySelector("#user-info").innerHTML = '';
   document.getElementById('save-prof-changes').disabled = true;
 
   document.getElementById('pw-change').addEventListener('click', () => password_view());
@@ -760,18 +762,83 @@ function view_profile(username) {
       }
 
       var row = document.createElement('div');
-      row.classList.add("container-fluid");
+      row.classList.add("container.fluid");
       row.innerHTML = `<div class="row">
-                        <div class="col-3" style="color:gray;text-align:right;font-weight:bold">Last login:</div>
-                        <div class="col">${result.last_login}</div>
+                        <div class="col-3" style="color:gray;font-weight:bold">Last login:</div>
+                        <div class="col">${last_login}</div>
                       </div>
                       <div class="row">
-                        <div class="col-3" style="color:gray;text-align:right;font-weight:bold">Role:</div>
+                        <div class="col-3" style="color:gray;font-weight:bold">Role:</div>
                         <div class="col">${result.role}</div>
                       </div>
-                    </div>`;
+                    </div>
+                    <hr>`;
       document.querySelector('#user-info').appendChild(row);
-      // get all the streams/roadmaps the user is an owner of
+      // get all the programs the user is an admin of, if a program admin
+      if (result.role == 'Program admin') {
+        // get the programs of which the the user is admin
+        fetch('/programs')
+          .then(response => response.json())
+          .then(programs => {
+            if (programs.length > 0) {
+              var prog_headline = document.createElement('h6');
+              prog_headline.innerHTML = 'Programs<br>';
+              document.querySelector('#user-info').appendChild(prog_headline);
+            }
+            programs.forEach(program => {
+              var prog_row = document.createElement('div');
+              prog_row.classList.add("container.fluid");
+              prog_row.innerHTML = `<div class="row">
+                                <div class="col">${program.fields.name}</div>
+                              </div>`;
+              document.querySelector('#user-info').appendChild(prog_row);
+            })
+            var hr = document.createElement('hr')
+            document.querySelector('#user-info').appendChild(hr);
+          })
+      }
+      if (result.role == 'Program admin ' || result.role == 'Stream admin') {
+        // get all the programs the user is an owner of, if a program/stream admin
+        fetch('/streams')
+          .then(response => response.json())
+          .then(streams => {
+            if (streams.length > 0) {
+              var str_headline = document.createElement('h6');
+              str_headline.innerHTML = 'Streams<br>';
+              document.querySelector('#user-info').appendChild(str_headline);
+            }
+            streams.forEach(stream => {
+              var str_row = document.createElement('div');
+              str_row.classList.add("container.fluid");
+              str_row.innerHTML = `<div class="row">
+                                <div class="col">${stream.fields.name}</div>
+                              </div>`;
+              document.querySelector('#user-info').appendChild(str_row);
+            })
+            var hr = document.createElement('hr')
+            document.querySelector('#user-info').appendChild(hr);
+          })
+      }
+      if (result.role == 'Program admin ' || result.role == 'Stream admin' || result.role == 'Roadmap owner')
+        // get the user's roadmaps
+        fetch('/roadmaps')
+          .then(response => response.json())
+          .then(roadmaps => {
+            if (roadmaps.length > 0) {
+              var rm_headline = document.createElement('h6');
+              rm_headline.innerHTML = 'Roadmaps<br>';
+              document.querySelector('#user-info').appendChild(rm_headline);
+            }
+            roadmaps.forEach(roadmap => {
+              var rm_row = document.createElement('div');
+              rm_row.classList.add("container.fluid");
+              rm_row.innerHTML = `<div class="row">
+                                <div class="col"><span id="rm-${roadmap.id}" class="prof-rm">${roadmap.name}</span></div>
+                              </div>`;
+              document.querySelector('#user-info').appendChild(rm_row);
+              document.getElementById(`rm-${roadmap.id}`).addEventListener('click', () => load_roadmap(roadmap.id));
+            })
+          })
     })
 }
 
@@ -807,6 +874,7 @@ function save_profile(username) {
 
 function password_view() {
   document.querySelector("#password-change").style.display = 'block';
+  document.getElementById('close').addEventListener('click', () => document.querySelector("#password-change").style.display = 'none');
   document.getElementById('update-password').addEventListener('click', () => change_password());
 }
 

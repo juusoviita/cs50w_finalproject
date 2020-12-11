@@ -82,8 +82,7 @@ class Stream(models.Model):
             "id": self.id,
             "name": self.name,
             "path": self.path,
-            "parent": self.parent,
-            "program": self.program,
+            "program": self.program.name,
             "admins": self.admins
         }
 

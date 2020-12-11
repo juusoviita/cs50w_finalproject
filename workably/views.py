@@ -20,13 +20,16 @@ def get_roadmaps(request):
     user = request.user
     # if user is superuser, get all of the roadmaps
     if user.is_superuser == True:
-        programs = Program.objects.filter(admins=user)
-        streams = Stream.objects.filter(program__in=programs)
         roadmaps = Roadmap.objects.all()
 
     # if user is a Roadmap owner
     if user.profile.role.name == 'Roadmap owner':
         roadmaps = Roadmap.objects.filter(owner=user)
+
+    # if user is a Stream admin
+    if user.profile.role.name == 'Stream admin':
+        streams = Stream.objects.filter(admins=user)
+        roadmaps = Roadmap.objects.filter(stream__in=streams)
 
     # if user is a Program admin
     if user.profile.role.name == 'Program admin':
@@ -35,6 +38,22 @@ def get_roadmaps(request):
         roadmaps = Roadmap.objects.filter(stream__in=streams)
 
     return JsonResponse([roadmap.serialize() for roadmap in roadmaps], safe=False)
+
+
+def get_programs(request):
+    user = request.user
+    programs = Program.objects.filter(admins=user)
+    json_programs = serializers.serialize('json', programs)
+
+    return HttpResponse(json_programs, content_type="text/json-comment-filtered")
+
+
+def get_streams(request):
+    user = request.user
+    streams = Stream.objects.filter(admins=user)
+    json_streams = serializers.serialize('json', streams)
+
+    return HttpResponse(json_streams, content_type="text/json-comment-filtered")
 
 
 def roadmap(request, roadmap_id):

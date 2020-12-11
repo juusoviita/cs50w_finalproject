@@ -11,6 +11,8 @@ urlpatterns = [
     path("reporting", views.reporting, name="reporting"),
     # API paths
     path("password", views.change_password, name="password"),
+    path("programs", views.get_programs, name="get_programs"),
+    path("streams", views.get_streams, name="get_streams"),
     path("roadmaps", views.get_roadmaps, name="get_roadmaps"),
     path("roadmap/<int:roadmap_id>", views.roadmap, name="get_roadmap"),
     path("editroadmap", views.edit_roadmap, name="edit_roadmap"),
