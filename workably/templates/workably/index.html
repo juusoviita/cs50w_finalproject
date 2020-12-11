@@ -17,8 +17,10 @@
     <div class="row">
       <div class="col-4">
         <div id="username-view"></div>
+        <div id="profile-message" class="message"></div>
         <div id="user-id" hidden></div>
         <form>
+          {% csrf_token %}
           <label for="firstname">First name:</label><br>
           <input type="text" id="firstname" name="firstname" class="input-field"><br>
           <label for="lastname">Last name:</label><br>
@@ -38,8 +40,20 @@
         <div id="user-info"></div>
       </div>
       <div class="col-4">
-        Change Password view?
-        <div id="password-change">Here's the form to change your password</div>
+        <div id="password-change" class="message">
+          <div id="pw-message"></div>
+          <form action="">
+            {% csrf_token %}
+            <label for="old-password">Old password:</label><br>
+            <input type="password" id="old-password" name="old-password" class="input-field"><br>
+            <label for="new-password">New password:</label><br>
+            <input type="password" id="new-password" name="new-password" class="input-field"><br>
+            <label for="confirmation">New password, again:</label><br>
+            <input type="password" id="confirmation" name="confirmation" class="input-field"><br>
+            <br>
+            <input type="submit" id="update-password" class="btn btn-primary" value="Change Password"><br>
+          </form>
+        </div>
       </div>
     </div>
   </div>

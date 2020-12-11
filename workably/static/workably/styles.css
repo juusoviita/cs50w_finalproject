@@ -101,3 +101,7 @@ select {
   cursor: pointer;
   color: crimson;
 }
+
+.message {
+  margin: 10px;
+}

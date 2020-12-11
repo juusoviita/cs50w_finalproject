@@ -704,7 +704,7 @@ function view_profile(username) {
   document.querySelector("#username-view").innerHTML = `<h5>Profile view: ${username}</h5>`;
   document.getElementById('save-prof-changes').disabled = true;
 
-  document.getElementById('pw-change').addEventListener('click', () => change_password());
+  document.getElementById('pw-change').addEventListener('click', () => password_view());
 
   //save the form fields to variables
   var userid = document.querySelector("#user-id");
@@ -716,6 +716,7 @@ function view_profile(username) {
   fetch(`/profile/${username}`)
     .then(response => response.json())
     .then(result => {
+      userid.innerHTML = result.id;
       firstname.setAttribute("value", result.first_name);
       lastname.setAttribute("value", result.last_name);
       email.setAttribute("value", result.email);
@@ -794,11 +795,63 @@ function save_profile(username) {
   })
     .then(response => response.json())
     .then(result => {
-      console.log(result.message);
       view_profile(username);
+      document.getElementById('profile-message').innerHTML = `<div class="alert alert-success alert-dismissible fade show" role="alert">${result.message}
+                                                                <button type="button" class="close" data-dismiss="alert" aria-label="Close">
+                                                                  <span aria-hidden="true">&times;</span>
+                                                                </button>
+                                                              </div>`;
     })
+  event.preventDefault();
 }
 
-function change_password() {
+function password_view() {
   document.querySelector("#password-change").style.display = 'block';
+  document.getElementById('update-password').addEventListener('click', () => change_password());
+}
+
+
+function change_password() {
+  // save the values of those fields to variables
+  var user_id = document.querySelector("#user-id").innerHTML;
+  var old_password = document.querySelector("#old-password").value;
+  var new_password = document.querySelector("#new-password").value;
+  var confirmation = document.querySelector("#confirmation").value;
+
+  // pass those variables to the API in POST
+  fetch('/password', {
+    method: 'POST',
+    body: JSON.stringify({
+      user_id: user_id,
+      old_password: old_password,
+      new_password: new_password,
+      confirmation: confirmation
+    })
+  })
+    .then(response => response.json())
+    .then(result => {
+      if ("error" in result) {
+        // display the error in the message div and empty all the fields
+        document.getElementById('pw-message').innerHTML = `<div class="alert alert-danger alert-dismissible fade show" role="alert">${result.error}
+                                                              <button type="button" class="close" data-dismiss="alert" aria-label="Close">
+                                                                <span aria-hidden="true">&times;</span>
+                                                              </button>
+                                                            </div>`;
+        document.querySelector("#old-password").value = '';
+        document.querySelector("#new-password").value = '';
+        document.querySelector("#confirmation").value = '';
+      } else {
+        // display message in another div, empty all the fields, and hide the password view
+        document.getElementById('profile-message').innerHTML = `<div class="alert alert-success alert-dismissible fade show" role="alert">${result.message}
+                                                                  <button type="button" class="close" data-dismiss="alert" aria-label="Close">
+                                                                    <span aria-hidden="true">&times;</span>
+                                                                  </button>
+                                                                </div>`;
+        document.querySelector("#old-password").value = '';
+        document.querySelector("#new-password").value = '';
+        document.querySelector("#confirmation").value = '';
+        document.querySelector("#password-change").style.display = 'none';
+      }
+    })
+  event.preventDefault();
 }

@@ -224,7 +224,7 @@ def profile(request, username):
     user = User.objects.get(username=username)
     profile = Profile.objects.get(user=user)
 
-    return JsonResponse({"id": user.id, "username": user.username, "email": user.email, "last_login": user.last_login, "first_name": profile.first_name, "last_name": profile.last_name, "phone": profile.phone, "role": profile.role.name}, safe=False)
+    return JsonResponse({"id": user.id, "username": user.username, "email": user.email, "last_login": user.last_login.date(), "first_name": profile.first_name, "last_name": profile.last_name, "phone": profile.phone, "role": profile.role.name}, safe=False)
 
 
 @csrf_exempt
@@ -232,7 +232,7 @@ def edit_profile(request):
     if request.method == "PUT":
         data = json.loads(request.body)
         user_id = data.get("user_id", "")
-        username = data.get("username", "")
+        # username = data.get("username", "")
         first_name = data.get("firstname", "")
         last_name = data.get("lastname", "")
         email = data.get("email", "")
@@ -317,6 +317,32 @@ def register(request):
         return render(request, "workably/register.html", {
             "roles": roles
         })
+
+
+@csrf_exempt
+def change_password(request):
+    if request.method == "POST":
+        data = json.loads(request.body)
+        user_id = data.get("user_id", "")
+        old_password = data.get("old_password", "")
+        new_password = data.get("new_password", "")
+        confirmation = data.get("confirmation", "")
+
+        user = User.objects.get(pk=user_id)
+
+        if (old_password == '' or new_password == '' or confirmation == ''):
+            return JsonResponse({"error": "Fill out all the fields!"})
+
+        if new_password != confirmation:
+            return JsonResponse({"error": "New password and Confirmation do not match!"})
+
+        # Check if the old password is correct and if so, save the new password, else return an error
+        if user.check_password(old_password) == True:
+            user.set_password(new_password)
+            user.save()
+            return JsonResponse({"message": "Password changed succesfully!"})
+        else:
+            return JsonResponse({"error": "Old password incorrect!"})
 
 
 def request_account(request):
