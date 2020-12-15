@@ -3,6 +3,7 @@ document.addEventListener('DOMContentLoaded', function () {
   document.querySelector("#roadmap-view").style.display = 'none';
   document.querySelector("#milestone-list").style.display = 'none';
   document.querySelector("#profile-view").style.display = 'none';
+  document.querySelector("#btn-row").style.display = 'none';
 
   var username = document.getElementById('username').innerHTML;
   document.getElementById('username').addEventListener('click', () => view_profile(username));
@@ -18,11 +19,49 @@ document.addEventListener('DOMContentLoaded', function () {
           var roadmaprow = document.createElement('a');
           roadmaprow.classList.add('dropdown-item');
           roadmaprow.setAttribute("id", `roadmap-${roadmap.id}`);
-          roadmaprow.setAttribute("href", "#")
+          roadmaprow.setAttribute("href", "#");
           roadmaprow.innerHTML = roadmap.name;
           rmdropdown.appendChild(roadmaprow);
           document.getElementById(`roadmap-${roadmap.id}`).addEventListener('click', () => load_roadmap(roadmap.id));
         });
+      })
+  }
+
+  // if user is a stream / program admin, display the management view and load the needed information
+  var mgmt_view = document.getElementById('mgmt-view');
+  if (typeof (mgmt_view) != 'undefined' && mgmt_view != null) {
+    var program_dd = document.getElementById('program-dd');
+    // set a header / a dropdown for the program(s) that the user has access to and call treeview for the first/only one
+    fetch('/programs')
+      .then(response => response.json())
+      .then(programs => {
+        if (programs.length > 0) {
+          var program_dropdown = document.createElement('div');
+          program_dropdown.classList.add('dropdown')
+          program_dropdown.setAttribute('id', 'program-dropdown');
+          program_dropdown.innerHTML = `<button class="btn btn-outline-primary dropdown-toggle" type="button" id="dropdownMenuButton" data-toggle="dropdown" aria-haspopup="true" aria-expanded="false">
+                                          Select Program
+                                        </button>
+                                        <div id="dropdown-list" class="dropdown-menu" aria-labelledby="dropdownMenuButton">
+                                        </div>`;
+          program_dd.appendChild(program_dropdown);
+          var dropdownlist = document.getElementById('dropdown-list');
+          programs.forEach(program => {
+            var programrow = document.createElement('option');
+            programrow.setAttribute('id', `program-${program.pk}`);
+            programrow.classList.add('dropdown-item');
+            programrow.setAttribute("href", "#");
+            programrow.innerHTML = program.fields.name;
+            dropdownlist.appendChild(programrow);
+            document.getElementById(`program-${program.pk}`).addEventListener('click', () => load_treeview(program.pk, program.fields.name));
+          })
+        } else {
+          var program_id = Object.keys(programs);
+          var program_name = programs[program_id[0]];
+          program_dd.innerHTML = `<h5 style="margin-bottom:12px;">${program_name}</h5>`;
+          load_treeview(program_id[0]);
+          load_impacttable(program_id[0]);
+        }
       })
   }
 })
@@ -35,7 +74,7 @@ function load_roadmap(roadmap_id) {
   document.querySelector("#roadmap-view").style.display = 'block';
   document.querySelector("#milestone-list").style.display = 'block';
   document.querySelector("#roadmap-view").innerHTML = '';
-  document.querySelector("#milestone-list").innerHTML = '<h6>Milestones<h6>';
+  document.querySelector("#milestone-list").innerHTML = '<h5>Milestones<h5>';
 
   // add 'Add Milestone' button
   var ms_button = document.createElement('div');
@@ -68,7 +107,7 @@ function load_roadmap(roadmap_id) {
       var info = document.createElement('div');
       info.classList.add("container");
       info.innerHTML = `<div class="row">
-                          <div class="col"><h6>${roadmap_name}</h6></div>
+                          <div class="col"><h5>${roadmap_name}</h5></div>
                           <div class="col" style="color:darkgray;text-align:right;"><i><small>Created on: ${created_on}</small></i></div>
                         </div>
                         <div class="row">
@@ -702,7 +741,7 @@ function view_profile(username) {
   document.querySelector("#profile-view").style.display = 'block';
   document.querySelector("#password-change").style.display = 'none';
 
-  document.querySelector("#username-view").innerHTML = `<h5>Profile view: ${username}</h5>`;
+  document.querySelector("#username-view").innerHTML = `<h5 id="profile-h5">Profile view: ${username}</h5>`;
   document.querySelector("#user-info").innerHTML = '';
   document.getElementById('save-prof-changes').disabled = true;
 
@@ -783,6 +822,7 @@ function view_profile(username) {
             if (programs.length > 0) {
               var prog_headline = document.createElement('h6');
               prog_headline.innerHTML = 'Programs<br>';
+              prog_headline.classList.add('profile-h6');
               document.querySelector('#user-info').appendChild(prog_headline);
             }
             programs.forEach(program => {
@@ -804,6 +844,7 @@ function view_profile(username) {
           .then(streams => {
             if (streams.length > 0) {
               var str_headline = document.createElement('h6');
+              str_headline.classList.add('profile-h6');
               str_headline.innerHTML = 'Streams<br>';
               document.querySelector('#user-info').appendChild(str_headline);
             }
@@ -826,6 +867,7 @@ function view_profile(username) {
           .then(roadmaps => {
             if (roadmaps.length > 0) {
               var rm_headline = document.createElement('h6');
+              rm_headline.classList.add('profile-h6');
               rm_headline.innerHTML = 'Roadmaps<br>';
               document.querySelector('#user-info').appendChild(rm_headline);
             }
@@ -871,6 +913,7 @@ function save_profile(username) {
     })
   event.preventDefault();
 }
+
 
 function password_view() {
   document.querySelector("#password-change").style.display = 'block';
@@ -922,4 +965,20 @@ function change_password() {
       }
     })
   event.preventDefault();
+}
+
+
+function load_treeview(program_id, program_name) {
+  var treeview = document.getElementById('treeview-view');
+  treeview.innerHTML = '';
+  document.querySelector("#btn-row").style.display = 'block';
+  console.log(`Showing the treeview for program ${program_id} ${program_name}`);
+  var title = document.createElement('h6');
+  title.innerHTML = program_name;
+  treeview.appendChild(title);
+}
+
+
+function load_impacttable(program_id) {
+  console.log(`Showing the impact table for program ${program_id}`);
 }

@@ -44,8 +44,22 @@ def get_roadmaps(request):
 
 def get_programs(request):
     user = request.user
-    programs = Program.objects.filter(admins=user)
-    json_programs = serializers.serialize('json', programs)
+    profile = Profile.objects.get(user=user)
+    if profile.role.name == 'Program admin':
+        programs = Program.objects.filter(admins=user)
+        json_programs = serializers.serialize('json', programs)
+        # return HttpResponse(json_programs, content_type="text/json-comment-filtered")
+
+    if profile.role.name == 'Stream admin':
+        streams = Stream.objects.filter(admins=user)
+
+        # go through the list of streams and append the dict with an id and a name
+        programs = {}
+        for stream in streams:
+            program = stream.program
+            programs[str(program.id)] = program.name
+
+        json_programs = json.dumps(programs)
 
     return HttpResponse(json_programs, content_type="text/json-comment-filtered")
 
