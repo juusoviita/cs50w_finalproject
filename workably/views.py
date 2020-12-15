@@ -1,6 +1,7 @@
 from django.shortcuts import render
 from django.http import HttpResponse, HttpResponseRedirect, JsonResponse
 from django.core import serializers
+from django.core.mail import send_mail
 from django.contrib.auth import authenticate, login, logout
 from django.contrib.auth.decorators import login_required
 from django.views.decorators.csrf import csrf_exempt
@@ -10,6 +11,7 @@ from django_countries import countries
 
 import json
 import datetime
+import csv
 
 from .models import Role, User, Profile, Program, Stream, Roadmap, Milestone, ImpactType, Impact
 
@@ -326,6 +328,14 @@ def register(request):
                               last_name=last_name, phone=phone, role=role)
             profile.save()
 
+            # send an email about the account to the new user
+            send_mail(f"Workably account for {first_name} {last_name}",
+                      f"You have a new Workably account with the username {username}. Please contact workably.adm@gmail.com to get your password.", 'workably.adm@gmail.com', [email])
+
+            return render(request, "workably/index.html", {
+                "message": "Account created succesfully."
+            })
+
         except IntegrityError:
             return render(request, "workably/register.html", {
                 "message": "Username already taken."
@@ -370,10 +380,12 @@ def request_account(request):
         requester_email = request.POST["requester_email"]
         request_message = request.POST["request_message"]
 
-        print(requester_name, requester_email, request_message)
+        # send the request email to the admin
+        send_mail(f"Account request from {requester_name} ({requester_email})", request_message, requester_email, [
+                  'workably.adm@gmail.com'])
 
         # render also a message telling that your request has been sent
-        return HttpResponseRedirect(reverse("index"))
+        return render(request, "workably/index.html", {'message': 'Your request has been sent!'})
     else:
         return render(request, "workably/request_account.html")
 
