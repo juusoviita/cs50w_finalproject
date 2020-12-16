@@ -3,7 +3,11 @@ document.addEventListener('DOMContentLoaded', function () {
   document.querySelector("#roadmap-view").style.display = 'none';
   document.querySelector("#milestone-list").style.display = 'none';
   document.querySelector("#profile-view").style.display = 'none';
-  document.querySelector("#btn-row").style.display = 'none';
+
+  var btn_row = document.getElementById('btn-row');
+  if (typeof (btn_row) != 'undefined' && btn_row != null) {
+    document.querySelector("#btn-row").style.display = 'none';
+  }
 
   var username = document.getElementById('username').innerHTML;
   document.getElementById('username').addEventListener('click', () => view_profile(username));
@@ -59,8 +63,7 @@ document.addEventListener('DOMContentLoaded', function () {
           var program_id = Object.keys(programs);
           var program_name = programs[program_id[0]];
           program_dd.innerHTML = `<h5 style="margin-bottom:12px;">${program_name}</h5>`;
-          load_treeview(program_id[0]);
-          load_impacttable(program_id[0]);
+          load_treeview(program_id[0], program_name);
         }
       })
   }
@@ -74,6 +77,12 @@ function load_roadmap(roadmap_id) {
   document.querySelector("#roadmap-view").style.display = 'block';
   document.querySelector("#milestone-list").style.display = 'block';
   document.querySelector("#roadmap-view").innerHTML = '';
+
+  var impact_table = document.getElementById('impact-table');
+  if (typeof (impact_table) != 'undefined' && impact_table != null) {
+    impact_table.style.display = 'none';
+  }
+
   document.querySelector("#milestone-list").innerHTML = '<h5>Milestones<h5>';
 
   // add 'Add Milestone' button
@@ -298,6 +307,7 @@ function load_roadmap(roadmap_id) {
           });
         })
     })
+  event.stopPropagation();
 }
 
 function edit_roadmap(roadmap_id, roadmap_name, owner, created_on, last_updated, description, last_updater, current_country, current_region) {
@@ -972,13 +982,81 @@ function load_treeview(program_id, program_name) {
   var treeview = document.getElementById('treeview-view');
   treeview.innerHTML = '';
   document.querySelector("#btn-row").style.display = 'block';
-  console.log(`Showing the treeview for program ${program_id} ${program_name}`);
-  var title = document.createElement('h6');
-  title.innerHTML = program_name;
-  treeview.appendChild(title);
+  // set the first node in the treeview as the program
+  var treeview_ul = document.createElement('ul');
+  treeview_ul.setAttribute('id', 'treeview');
+  treeview_ul.innerHTML = `<li><span class="caret">${program_name}</span>
+                            <ul id="stream-list" class="nested"></ul>
+                          </li>`;
+  treeview.appendChild(treeview_ul);
+  document.getElementById('treeview').addEventListener('click', () => load_impacttable(program_id, 'program'));
+
+  // get all the streams within the program that are under the admin
+  fetch(`/streams/${program_id}`)
+    .then(response => response.json())
+    .then(streams => {
+      streams.forEach(stream => {
+        // get the program caret
+        var str_list = document.getElementById('stream-list');
+        // if no parent stream, goes underneath the program caret
+        if (stream.fields.parent == null) {
+          // create a stream-item element
+          var str_row = document.createElement('li');
+          str_row.setAttribute('id', `stream-${stream.pk}`);
+          str_row.innerHTML = `<span class="caret">${stream.fields.name}</span>
+                                <ul id="nested-${stream.pk}" class="nested"></ul> `;
+          // add to the program parent element and attach the load_impacttable function (when clicked)
+          str_list.appendChild(str_row);
+          document.getElementById(`stream-${stream.pk}`).addEventListener('click', () => load_impacttable(stream.pk, 'stream'));
+        } else {
+          // goes underneath the appropriate stream
+          var prnt_str = document.getElementById(`nested-${stream.fields.parent}`);
+          // create a stream-item element
+          var str_row = document.createElement('li');
+          str_row.setAttribute('id', `stream-${stream.pk}`);
+          str_row.innerHTML = `<span class="caret">${stream.fields.name}</span>
+                                <ul id="nested-${stream.pk}" class="nested"></ul> `;
+          // add to the program parent element and attach the load_impacttable function (when clicked)
+          prnt_str.appendChild(str_row);
+          document.getElementById(`stream-${stream.pk}`).addEventListener('click', () => load_impacttable(stream.pk, 'stream'));
+        }
+        // get all the roadmaps underneath and attach the load_roadmap function (when clicked)
+        fetch(`/roadmaps/${stream.pk}`)
+          .then(response => response.json())
+          .then(roadmaps => {
+            if (roadmaps.length != 0) {
+              var str_head = document.getElementById(`nested-${stream.pk}`);
+              roadmaps.forEach(roadmap => {
+                const rm_row = document.createElement('li');
+                rm_row.setAttribute('id', `roadmap-${roadmap.pk}`)
+                rm_row.classList.add('prof-rm');
+                rm_row.innerHTML = '- ' + roadmap.fields.name;
+                str_head.appendChild(rm_row);
+                document.getElementById(`roadmap-${roadmap.pk}`).addEventListener('click', () => load_roadmap(roadmap.pk));
+              })
+            }
+          })
+      })
+      // attach the dropdown functionality to the treeview itself
+      var toggler = document.getElementsByClassName("caret");
+      var i;
+
+      for (i = 0; i < toggler.length; i++) {
+        toggler[i].addEventListener("click", function () {
+          this.parentElement.querySelector(".nested").classList.toggle("active");
+          this.classList.toggle("caret-down");
+        });
+      }
+    })
 }
 
 
-function load_impacttable(program_id) {
-  console.log(`Showing the impact table for program ${program_id}`);
+function load_impacttable(id, type) {
+  document.querySelector("#roadmap-view").innerHTML = '';
+  document.querySelector("#roadmap-view").style.display = 'none';
+  document.querySelector("#milestone-list").innerHTML = '';
+  document.querySelector("#milestone-list").style.display = 'none';
+  console.log(`Showing the impact table for ${type} ${id}`);
+  document.querySelector("#impact-table").style.display = 'block';
+  event.stopPropagation();
 }

@@ -72,6 +72,28 @@ def get_streams(request):
     return HttpResponse(json_streams, content_type="text/json-comment-filtered")
 
 
+def list_streams(request, program_id):
+    user = request.user
+    profile = Profile.objects.get(user=user)
+
+    if profile.role.name == 'Program admin':
+        streams = Stream.objects.filter(program=program_id)
+    elif profile.role.name == 'Stream admin':
+        streams = Stream.objects.filter(admins=user, program=program_id)
+        substreams = Stream.objects.filter(parent__in=streams)
+        streams = streams | substreams
+
+    json_streams = serializers.serialize('json', streams)
+
+    return HttpResponse(json_streams, content_type="text/json-comment-filtered")
+
+
+def list_roadmaps(request, stream_id):
+    roadmaps = Roadmap.objects.filter(stream=stream_id)
+    roadmaps_json = serializers.serialize('json', roadmaps)
+    return HttpResponse(roadmaps_json, content_type="text/json-comment-filtered")
+
+
 def roadmap(request, roadmap_id):
     if request.method == "GET":
         roadmap = Roadmap.objects.filter(pk=roadmap_id)
