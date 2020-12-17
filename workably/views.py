@@ -72,6 +72,28 @@ def get_streams(request):
     return HttpResponse(json_streams, content_type="text/json-comment-filtered")
 
 
+@csrf_exempt
+def post_stream(request):
+    if request.method == 'POST':
+        data = json.loads(request.body)
+        name = data.get("name", "")
+        admin_id = data.get("admin", "")
+        admin = User.objects.get(pk=admin_id)
+        parent_id = data.get("parent", "")
+        if parent_id != '':
+            parent = Stream.objects.get(pk=parent_id)
+            program = parent.program
+            stream = Stream(name=name, parent=parent, program=program)
+        else:
+            program_id = data.get("program", "")
+            program = Program.objects.get(pk=program_id)
+            stream = Stream(name=name, program=program)
+
+        stream.save()
+        stream.admins.set([admin])
+        return JsonResponse({"id": stream.id, "message": "Stream saved!"}, safe=False)
+
+
 def list_streams(request, program_id):
     user = request.user
     profile = Profile.objects.get(user=user)
@@ -121,10 +143,41 @@ def edit_roadmap(request):
 
         return JsonResponse({"result": "Roadmap edited"}, safe=False)
 
+    if request.method == "DELETE":
+        data = json.loads(request.body)
+        roadmap_id = data.get("roadmap_id", "")
+        roadmap = Roadmap.objects.filter(pk=roadmap_id)
+        roadmap.delete()
+
+        return JsonResponse({"message": "Roadmap deleted"}, safe=False)
+
+
+@csrf_exempt
+def post_roadmap(request):
+    if request.method == 'POST':
+        # get the information for the creation and update information
+        user = request.user
+        date = datetime.date.today()
+
+        data = json.loads(request.body)
+        name = data.get("name", "")
+        stream_id = data.get("stream_id", "")
+        stream = Stream.objects.get(pk=stream_id)
+        owner_id = data.get("owner", "")
+        owner = User.objects.get(pk=owner_id)
+        desc = data.get("desc", "")
+        country = data.get("country", "")
+        region = data.get("region", "")
+
+        roadmap = Roadmap(name=name, description=desc, path='', stream=stream, owner=owner, created_on=date,
+                          last_updated=date, last_updater=user, comments='', country=country, region=region)
+
+        roadmap.save()
+        return JsonResponse({"id": roadmap.id, "message": "Roadmap saved!"}, safe=False)
+
 
 def milestones(request, roadmap_id):
     if request.method == "GET":
-        # roadmap = Roadmap.objects.filter(pk=roadmap_id)
         milestones = Milestone.objects.filter(roadmap__id=roadmap_id)
         return JsonResponse([milestone.serialize() for milestone in milestones], safe=False)
 

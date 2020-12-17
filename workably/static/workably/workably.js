@@ -3,6 +3,8 @@ document.addEventListener('DOMContentLoaded', function () {
   document.querySelector("#roadmap-view").style.display = 'none';
   document.querySelector("#milestone-list").style.display = 'none';
   document.querySelector("#profile-view").style.display = 'none';
+  document.querySelector("#new-roadmap-view").style.display = 'none';
+  document.querySelector("#new-stream-view").style.display = 'none';
 
   var btn_row = document.getElementById('btn-row');
   if (typeof (btn_row) != 'undefined' && btn_row != null) {
@@ -77,6 +79,18 @@ function load_roadmap(roadmap_id) {
   document.querySelector("#roadmap-view").style.display = 'block';
   document.querySelector("#milestone-list").style.display = 'block';
   document.querySelector("#roadmap-view").innerHTML = '';
+
+  // if user comes from the mgmt-view, enable the deletion button and add eventlistener
+  var btn_row = document.getElementById('btn-row');
+  if (typeof (btn_row) != 'undefined' && btn_row != null) {
+    document.getElementById('delete-roadmap').disabled = false;
+    document.getElementById('delete-roadmap').addEventListener('click', () => delete_roadmap(roadmap_id));
+    // disable the other buttons
+    document.getElementById('crete-stream').disabled = true;
+    document.getElementById('delete-stream').disabled = true;
+    document.getElementById('create-roadmap').disabled = true;
+    document.getElementById('export-data').disabled = true;
+  }
 
   var impact_table = document.getElementById('impact-table');
   if (typeof (impact_table) != 'undefined' && impact_table != null) {
@@ -308,6 +322,7 @@ function load_roadmap(roadmap_id) {
         })
     })
   event.stopPropagation();
+  event.preventDefault();
 }
 
 function edit_roadmap(roadmap_id, roadmap_name, owner, created_on, last_updated, description, last_updater, current_country, current_region) {
@@ -989,7 +1004,8 @@ function load_treeview(program_id, program_name) {
                             <ul id="stream-list" class="nested"></ul>
                           </li>`;
   treeview.appendChild(treeview_ul);
-  document.getElementById('treeview').addEventListener('click', () => load_impacttable(program_id, 'program'));
+
+  document.getElementById('treeview').addEventListener('click', () => load_impacttable(program_id, program_name, 'program'));
 
   // get all the streams within the program that are under the admin
   fetch(`/streams/${program_id}`)
@@ -1007,7 +1023,7 @@ function load_treeview(program_id, program_name) {
                                 <ul id="nested-${stream.pk}" class="nested"></ul> `;
           // add to the program parent element and attach the load_impacttable function (when clicked)
           str_list.appendChild(str_row);
-          document.getElementById(`stream-${stream.pk}`).addEventListener('click', () => load_impacttable(stream.pk, 'stream'));
+          document.getElementById(`stream-${stream.pk}`).addEventListener('click', () => load_impacttable(stream.pk, stream.fields.name, 'stream'));
         } else {
           // goes underneath the appropriate stream
           var prnt_str = document.getElementById(`nested-${stream.fields.parent}`);
@@ -1018,7 +1034,7 @@ function load_treeview(program_id, program_name) {
                                 <ul id="nested-${stream.pk}" class="nested"></ul> `;
           // add to the program parent element and attach the load_impacttable function (when clicked)
           prnt_str.appendChild(str_row);
-          document.getElementById(`stream-${stream.pk}`).addEventListener('click', () => load_impacttable(stream.pk, 'stream'));
+          document.getElementById(`stream-${stream.pk}`).addEventListener('click', () => load_impacttable(stream.pk, stream.fields.name, 'stream'));
         }
         // get all the roadmaps underneath and attach the load_roadmap function (when clicked)
         fetch(`/roadmaps/${stream.pk}`)
@@ -1051,12 +1067,342 @@ function load_treeview(program_id, program_name) {
 }
 
 
-function load_impacttable(id, type) {
+function load_impacttable(id, name, type) {
   document.querySelector("#roadmap-view").innerHTML = '';
   document.querySelector("#roadmap-view").style.display = 'none';
   document.querySelector("#milestone-list").innerHTML = '';
   document.querySelector("#milestone-list").style.display = 'none';
+
+  // first, removes all the eventListener from buttons, then goes through them and sets new listener
+  var btn_row = document.getElementById('btn-row');
+  btn_row.outerHTML = btn_row.outerHTML;
+  document.getElementById('delete-roadmap').disabled = true;
+  document.getElementById('crete-stream').disabled = false;
+  document.getElementById('crete-stream').addEventListener('click', () => create_stream(id, type));
+
+  document.getElementById('export-data').disabled = false;
+  document.getElementById('export-data').addEventListener('click', () => export_data(id, type));
+
+  // you can only create roadmaps under streams adn delete selected streams
+  if (type == 'stream') {
+    document.getElementById('create-roadmap').disabled = false;
+    document.getElementById('create-roadmap').addEventListener('click', () => create_roadmap(id, name));
+    document.getElementById('delete-stream').disabled = false;
+    document.getElementById('delete-stream').addEventListener('click', () => delete_stream(id));
+  } else {
+    document.getElementById('create-roadmap').disabled = true;
+    document.getElementById('delete-stream').disabled = true;
+  }
+
   console.log(`Showing the impact table for ${type} ${id}`);
+
   document.querySelector("#impact-table").style.display = 'block';
+  // check whether type is stream or program
+  // get all the relevant impacts and create the table
   event.stopPropagation();
+}
+
+
+function create_stream(id, type) {
+  // hide and empty all the necessary views
+  document.getElementById('impact-table').style.display = 'none';
+  document.getElementById('impact-table').innerHTML = '';
+  document.getElementById('roadmap-view').style.display = 'none';
+  document.getElementById('roadmap-view').innerHTML = '';
+  document.getElementById('edit-view').style.display = 'none';
+  document.getElementById('edit-view').innerHTML = '';
+  document.getElementById('milestone-list').style.display = 'none';
+  document.getElementById('milestone-list').innerHTML = '';
+  document.getElementById('profile-view').style.display = 'none';
+  document.getElementById('profile-view').innerHTML = '';
+  document.getElementById('new-roadmap-view').style.display = 'none';
+  document.getElementById('new-roadmap-view').innerHTML = '';
+  // disable all the buttons
+  var btn_row = document.getElementById('btn-row');
+  var buttons = btn_row.getElementsByTagName('button');
+  for (i = 0; i < buttons.length; i++) {
+    buttons[i].disabled = true;
+  }
+
+  // open and clear the new-stream-view
+  var new_str_view = document.getElementById('new-stream-view');
+  new_str_view.style.display = 'block';
+  new_str_view.innerHTML = '';
+  new_str_view.innerHTML = `<small><i>Creating a stream underneath ${type} id: ${id}</i></small>`;
+
+  // create the form in JavaScript
+  var new_str_div = document.createElement('div');
+  new_str_div.classList.add('container-new-str');
+  new_str_div.setAttribute('id', 'new-stream');
+  new_str_div.innerHTML = `<form id="new-rm-form">
+                              <label for="name">Stream name:</label><br>
+                              <input type="text" id="name" name="name" style="width:400px;"><br>
+                              <label for="admin">Admin:</label><br>
+                              <select id="admin" name="admin"></select><br>
+                              <br>
+                              <input type="submit" id="save-new-str" class="btn btn-primary" value="Save Stream"><br>
+                            </form>`;
+  new_str_view.appendChild(new_str_div);
+
+  // get admin information to the dropdown
+  var admin_dropdown = document.getElementById('admin');
+  fetch('/profiles')
+    .then(response => response.json())
+    .then(profiles => {
+      profiles.forEach(profile => {
+        admin_dropdown.innerHTML += `<option value="${profile.userid}">${profile.full_name}</option>`;
+      })
+    })
+  //add the save functionality to the button
+  document.getElementById('save-new-str').addEventListener('click', () => save_stream(id, type));
+  event.stopPropagation();
+}
+
+
+function save_stream(id, type) {
+  if (type == 'program') {
+    var program = id;
+    var parent = '';
+  } else {
+    var parent = id;
+    var program = '';
+  }
+  var name = document.getElementById('name').value;
+  var admin = document.getElementById('admin').value;
+  var admin = parseInt(admin);
+
+  console.log(name);
+  console.log(admin);
+  console.log(program);
+  console.log(parent);
+
+  // post the data from the form
+  fetch('/stream', {
+    method: 'POST',
+    body: JSON.stringify({
+      name: name,
+      admin: admin,
+      program: program,
+      parent: parent,
+    })
+  })
+    .then(response => response.json())
+    .then(result => {
+      document.getElementById('new-stream-view').innerHTML = '';
+      document.getElementById('new-stream-view').style.display = 'none';
+      // get the new roadmap's id from the response
+      var stream_id = result.id;
+      // add the new roadmap to the treeview depending on whether it has a parent or not
+      if (parent == '') {
+        var stream_list = document.getElementById(`stream-list`);
+        var stream = document.createElement('li');
+        stream.setAttribute('id', `stream-${stream_id}`);
+        stream.innerHTML = `<span class="caret">${name}</span>
+                            <ul id="nested-${stream_id}" class="nested"></ul> `;
+        stream_list.appendChild(stream);
+      } else {
+        var parent_str = document.getElementById(`nested-${parent}`);
+        var stream = document.createElement('li');
+        stream.setAttribute('id', `stream-${stream_id}`);
+        stream.innerHTML = `<span class="caret">${name}</span>
+                            <ul id="nested-${stream_id}" class="nested"></ul> `;
+        parent_str.appendChild(stream);
+      }
+      // display a success message to the user
+      document.getElementById('mgmt-message').innerHTML = `<div class="alert alert-success alert-dismissible fade show" role="alert">${result.message}
+                                                            <button type="button" class="close" data-dismiss="alert" aria-label="Close">
+                                                              <span aria-hidden="true">&times;</span>
+                                                            </button>
+                                                          </div>`;
+      // add to the program parent element and attach the load_impacttable function (when clicked) + the caret functionality
+      document.getElementById(`stream-${stream_id}`).addEventListener('click', () => load_impacttable(stream_id, name, 'stream'));
+      // attach the dropdown functionality to the treeview itself
+      var toggler = document.getElementsByClassName("caret");
+      var i;
+
+      for (i = 0; i < toggler.length; i++) {
+        toggler[i].addEventListener("click", function () {
+          this.parentElement.querySelector(".nested").classList.toggle("active");
+          this.classList.toggle("caret-down");
+        });
+      }
+    })
+  event.preventDefault();
+}
+
+
+function delete_stream(stream_id) {
+  var confirmation = confirm("Are you sure you want to delete this stream?")
+  if (confirmation == true) {
+    console.log(`Deleting stream ${stream_id}`);
+  } else {
+    console.log(`Canceled the deletion of stream ${stream_id}`)
+  }
+}
+
+
+function create_roadmap(stream_id, stream_name) {
+  console.log(`Creating a roadmap underneath stream ${stream_name} id: ${stream_id}`);
+  // hide and empty impact-table, roadmap-view, edit-view, milestone-list, and profile-view
+  document.getElementById('impact-table').style.display = 'none';
+  document.getElementById('impact-table').innerHTML = '';
+  document.getElementById('roadmap-view').style.display = 'none';
+  document.getElementById('roadmap-view').innerHTML = '';
+  document.getElementById('edit-view').style.display = 'none';
+  document.getElementById('edit-view').innerHTML = '';
+  document.getElementById('milestone-list').style.display = 'none';
+  document.getElementById('milestone-list').innerHTML = '';
+  document.getElementById('profile-view').style.display = 'none';
+  document.getElementById('profile-view').innerHTML = '';
+  // disable all the buttons
+  var btn_row = document.getElementById('btn-row');
+  var buttons = btn_row.getElementsByTagName('button');
+  for (i = 0; i < buttons.length; i++) {
+    buttons[i].disabled = true;
+  }
+
+  // open and clear all the fields of new-roadmap-view
+  var new_rm_view = document.getElementById('new-roadmap-view');
+  new_rm_view.style.display = 'block';
+  new_rm_view.innerHTML = '';
+  new_rm_view.innerHTML = `<small><i>Creating a roadmap underneath stream ${stream_name} id: ${stream_id}</i></small>`;
+
+  // create the form in JavaScript
+  var new_rm_div = document.createElement('div');
+  new_rm_div.classList.add('container-new-rm');
+  new_rm_div.setAttribute('id', 'new-roadmap');
+  new_rm_div.innerHTML = `<form id="new-rm-form">
+                            <label for="name">Roadmap name:</label><br>
+                            <input type="text" id="name" name="name" style="width:400px;"><br>
+                            <label for="owner">Owner:</label><br>
+                            <select id="owner" name="owner"></select><br>
+                            <label for="desc">Description:</label><br>
+                            <textarea id="desc" rows="4" cols="55" name="desc" form="new-rm-form"></textarea><br>
+                            <label for="country">Country:</label><br>
+                            <select id="country" name="country"></select><br>
+                            <label for="region">Region:</label><br>
+                            <select id="region" name="region"></select><br>
+                            <br>
+                            <input type="submit" id="save-new-rm" class="btn btn-primary" value="Save Roadmap"><br>
+                          </form>`;
+  new_rm_view.appendChild(new_rm_div);
+
+  // get owner, country, and region information to the dropdowns
+  var owner_dropdown = document.getElementById('owner');
+  fetch('/profiles')
+    .then(response => response.json())
+    .then(profiles => {
+      profiles.forEach(profile => {
+        owner_dropdown.innerHTML += `<option value="${profile.userid}">${profile.full_name}</option>`;
+      })
+    })
+
+  var region_dropdown = document.getElementById('region');
+  fetch('/regions')
+    .then(response => response.json())
+    .then(result => {
+      const regions = result.regions;
+      var length = Object.keys(regions).length;
+      for (i = 1; i < length + 1; i++) {
+        var region = regions[i];
+        region_dropdown.innerHTML += `<option value="${region}">${region}</option>`;
+      }
+    })
+
+  // get list of countries and add them to the edit-country dropdown
+  var country_dropdown = document.getElementById('country');
+  fetch('/countries')
+    .then(response => response.json())
+    .then(countries => {
+      var length = Object.keys(countries).length;
+      for (k = 1; k < length + 1; k++) {
+        country_dropdown.innerHTML += `<option value="${countries[k].code}">${countries[k].name}</option>`;
+      }
+    })
+
+  //add the save functionality to the button
+  document.getElementById('save-new-rm').addEventListener('click', () => save_roadmap(stream_id));
+}
+
+function save_roadmap(stream_id) {
+  console.log(`Saving roadmap in stream ${stream_id}!`)
+  // get the data from the form fields
+  var name = document.getElementById('name').value;
+  var owner = document.getElementById('owner').value;
+  var desc = document.getElementById('desc').value;
+  var country = document.getElementById('country').value;
+  var region = document.getElementById('region').value;
+  // post the data from the form
+  fetch('/roadmap', {
+    method: 'POST',
+    body: JSON.stringify({
+      name: name,
+      stream_id: stream_id,
+      owner: owner,
+      desc: desc,
+      country: country,
+      region: region
+    })
+  })
+    .then(response => response.json())
+    .then(result => {
+      document.getElementById('new-roadmap-view').innerHTML = '';
+      document.getElementById('new-roadmap-view').style.display = 'none';
+      // get the new roadmap's id from the response
+      var roadmap_id = result.id;
+      // add the new roadmap to the treeview
+      var stream = document.getElementById(`nested-${stream_id}`);
+      var roadmap = document.createElement('li');
+      roadmap.classList.add('prof-rm')
+      roadmap.setAttribute('id', `roadmap-${roadmap_id}`);
+      roadmap.innerHTML = `- ${name}`;
+      stream.appendChild(roadmap);
+      document.getElementById(`roadmap-${roadmap_id}`).addEventListener('click', () => load_roadmap(roadmap_id));
+      // display a success message to the user
+      document.getElementById('mgmt-message').innerHTML = `<div class="alert alert-success alert-dismissible fade show" role="alert">${result.message}
+                                                                  <button type="button" class="close" data-dismiss="alert" aria-label="Close">
+                                                                    <span aria-hidden="true">&times;</span>
+                                                                  </button>
+                                                                </div>`;
+    })
+  event.preventDefault();
+}
+
+function delete_roadmap(roadmap_id) {
+  var confirmation = confirm("Are you sure you want to delete this roadmap?")
+  if (confirmation == true) {
+    console.log(`Deleting roadmap ${roadmap_id}`);
+    // delete the roadmap
+    fetch('/editroadmap', {
+      method: 'DELETE',
+      body: JSON.stringify({
+        roadmap_id: roadmap_id
+      })
+    })
+      .then(response => response.json())
+      .then(result => {
+        // remove the roadmap from the treeview and clear & hide the roadmap view 
+        var roadmap = document.getElementById(`roadmap-${roadmap_id}`)
+        roadmap.parentNode.removeChild(roadmap);
+        document.getElementById(`roadmap-view`).innerHTML = '';
+        document.getElementById(`roadmap-view`).style.display = 'none';
+        // flash message to the user
+        document.getElementById('mgmt-message').innerHTML = `<div class="alert alert-success alert-dismissible fade show" role="alert">${result.message}
+                                                                  <button type="button" class="close" data-dismiss="alert" aria-label="Close">
+                                                                    <span aria-hidden="true">&times;</span>
+                                                                  </button>
+                                                                </div>`;
+        document.getElementById('delete-roadmap').disabled = true;
+      })
+  } else {
+    console.log(`Canceled the deletion of roadmap ${roadmap_id}`)
+  }
+}
+
+function export_data(id, type) {
+  if (type == 'program') {
+    console.log(`Exporting data for ${type} ${id}`);
+  } else {
+    console.log(`Exporting data for ${type} ${id}`);
+  }
 }

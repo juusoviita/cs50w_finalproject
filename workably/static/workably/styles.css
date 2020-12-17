@@ -14,7 +14,7 @@
   cursor: pointer;
 }
 
-#save-changes, #add-milestone, #save-prof-changes {
+#save-changes, #add-milestone, #save-prof-changes, #save-new-rm {
   margin: 5px;
 }
 
@@ -121,6 +121,11 @@ select {
   cursor: pointer;
 }
 
+.dropdown-item:hover {
+    color: blue;
+    cursor: pointer;
+}
+
 button {
   margin: 1px;
 }
@@ -133,6 +138,17 @@ button {
 
 #program-dropdown {
   margin-bottom: 15px;
+}
+
+#new-roadmap-view, #new-stream-view {
+  align-self: flex-start;
+  margin: 35px;
+  padding: 5px;
+  border-style: solid;
+  border-width: 0.5px;
+  border-radius: 6px;
+  border-color: gray;
+  width: fit-content;
 }
 
 /* Styling for management view's tree-view */
@@ -167,7 +183,8 @@ ul, #treeview {
 .caret-down::before {
   -ms-transform: rotate(90deg); /* IE 9 */
   -webkit-transform: rotate(90deg); /* Safari */
-  transform: rotate(90deg);  
+  transform: rotate(90deg);
+  background-color: coral;
 }
 
 .nested {

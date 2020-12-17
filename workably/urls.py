@@ -12,11 +12,13 @@ urlpatterns = [
     # API paths
     path("password", views.change_password, name="password"),
     path("programs", views.get_programs, name="get_programs"),
+    path("stream", views.post_stream, name="post_stream"),
     path("streams", views.get_streams, name="get_streams"),
     path("streams/<int:program_id>", views.list_streams, name="list_streams"),
     path("roadmaps", views.get_roadmaps, name="get_roadmaps"),
     path("roadmaps/<int:stream_id>", views.list_roadmaps, name="list_roadmaps"),
     path("roadmap/<int:roadmap_id>", views.roadmap, name="get_roadmap"),
+    path("roadmap", views.post_roadmap, name="post_roadmap"),
     path("editroadmap", views.edit_roadmap, name="edit_roadmap"),
     path("user/<int:user_id>", views.user, name="get_user"),
     path("profiles", views.profiles, name="get_profiles"),
