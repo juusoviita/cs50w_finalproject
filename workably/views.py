@@ -93,6 +93,15 @@ def post_stream(request):
         stream.admins.set([admin])
         return JsonResponse({"id": stream.id, "message": "Stream saved!"}, safe=False)
 
+    if request.method == 'DELETE':
+        data = json.loads(request.body)
+        stream_id = data.get("stream_id", "")
+
+        stream = Stream.objects.get(pk=stream_id)
+        stream.delete()
+
+        return JsonResponse({"message": "Stream deleted"}, safe=False)
+
 
 def list_streams(request, program_id):
     user = request.user
@@ -237,7 +246,87 @@ def milestone(request):
         return JsonResponse({"message": "Milestone deleted"})
 
 
-def impacts(request, milestone_id):
+@csrf_exempt
+def impacts(request):
+    if request.method == "POST":
+        user = request.user
+        profile = Profile.objects.get(user=user)
+
+        data = json.loads(request.body)
+        type_type = data.get("type", "")
+        type_id = data.get("id", "")
+
+        print(type_type + ' ' + str(type_id))
+
+        print(profile.role.name)
+
+        if type_type == 'program':
+            if profile.role.name == 'Program admin':
+                # if Program admin, then return the whole program's impact data
+                print('Return the whole program\'s impact data')
+            else:
+                # if Stream admin, then return only the streams where the user is owner
+                print('Return only stream-level impact data')
+
+        else:
+            if type_type == 'stream':
+                stream = Stream.objects.get(pk=type_id)
+                stream = stream.serialize()
+
+                # check if stream is a parent to any other streams and if so, loop through them as well
+                streams = Stream.objects.filter(parent=stream['id'])
+                streams_ser = []
+                for child_stream in streams:
+                    child_stream = child_stream.serialize()
+                    streams_ser.append(child_stream)
+
+                if len(streams_ser) == 0:
+                    streams_ser.append(stream)
+
+                print(len(streams_ser))
+
+                # for loop that loops through the streams_ser and at the end adds the roadmaps to the roadmaps dict
+                stream_dict = {}
+                l = 1
+                for stream in streams_ser:
+                    stream = {l: stream}
+                    stream['roadmaps'] = {}
+                    roadmaps = Roadmap.objects.filter(stream=stream[l]['id'])
+                    roadmap_dict = {}
+                    k = 1
+                    for roadmap in roadmaps:
+                        roadmap = {k: roadmap.serialize()}
+                        roadmap['milestones'] = {}
+                        milestones = Milestone.objects.filter(
+                            roadmap=roadmap[k]['id'])
+                        i = 1
+                        milestone_dict = {}
+                        for milestone in milestones:
+                            milestone = {i: milestone.serialize()}
+                            milestone['impacts'] = {}
+                            impacts = Impact.objects.filter(
+                                milestone=milestone[i]['id'])
+                            j = 1
+                            impact_dict = {}
+                            for impact in impacts:
+                                impact = {j: impact.serialize()}
+                                impact_dict.update(impact)
+                                j += 1
+                            milestone[i]['impacts'] = impact_dict
+                            milestone_dict.update(milestone)
+                            i += 1
+                        roadmap[k]['milestones'] = milestone_dict
+                        roadmap_dict.update(roadmap)
+                        k += 1
+                    stream[l]['roadmaps'] = roadmap_dict
+                    stream_dict.update(stream)
+                    l += 1
+                print(streams_ser)
+
+        return JsonResponse({"message": "Data sent!"}, safe=False)
+
+
+def get_impacts(request, milestone_id):
     if request.method == "GET":
         impacts = Impact.objects.filter(milestone__id=milestone_id)
         if len(impacts) == 0:
@@ -497,6 +586,10 @@ def login_view(request):
             })
     else:
         return render(request, "workably/login.html")
+
+
+def request_password(request):
+    return render(request, "workably/request_password.html")
 
 
 def logout_view(request):

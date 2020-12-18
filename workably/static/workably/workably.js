@@ -994,6 +994,7 @@ function change_password() {
 
 
 function load_treeview(program_id, program_name) {
+  document.querySelector("#impact-table").innerHTML = '';
   var treeview = document.getElementById('treeview-view');
   treeview.innerHTML = '';
   document.querySelector("#btn-row").style.display = 'block';
@@ -1088,17 +1089,33 @@ function load_impacttable(id, name, type) {
     document.getElementById('create-roadmap').disabled = false;
     document.getElementById('create-roadmap').addEventListener('click', () => create_roadmap(id, name));
     document.getElementById('delete-stream').disabled = false;
-    document.getElementById('delete-stream').addEventListener('click', () => delete_stream(id));
+    document.getElementById('delete-stream').addEventListener('click', () => delete_stream(id, name));
   } else {
     document.getElementById('create-roadmap').disabled = true;
     document.getElementById('delete-stream').disabled = true;
   }
 
-  console.log(`Showing the impact table for ${type} ${id}`);
-
-  document.querySelector("#impact-table").style.display = 'block';
-  // check whether type is stream or program
-  // get all the relevant impacts and create the table
+  // display the data as a table showing all the impact types and their Plan, Fcst, and Realized values
+  document.querySelector("#program-name").innerHTML = `<h6>${name}</h6>`;
+  var impact_table = document.querySelector("#impact-table");
+  impact_table.style.display = 'block';
+  impact_table.innerHTML = '';
+  impact_table.innerHTML = `Showing the impact table for ${type} ${name} id: ${id}`;
+  console.log(type);
+  console.log(id);
+  console.log(name);
+  // get the data from the backend
+  fetch('/impacts', {
+    method: 'POST',
+    body: JSON.stringify({
+      type: type,
+      id: id
+    })
+  })
+    .then(response => response.json())
+    .then(result => {
+      console.log(result.message);
+    })
   event.stopPropagation();
 }
 
@@ -1231,10 +1248,32 @@ function save_stream(id, type) {
 }
 
 
-function delete_stream(stream_id) {
-  var confirmation = confirm("Are you sure you want to delete this stream?")
+function delete_stream(stream_id, stream_name) {
+  var confirmation = confirm(`Are you sure you want to delete ${stream_name}?`)
   if (confirmation == true) {
-    console.log(`Deleting stream ${stream_id}`);
+    // delete the stream using POST
+    fetch('/stream', {
+      method: 'DELETE',
+      body: JSON.stringify({
+        stream_id: stream_id
+      })
+    })
+      // remove the stream from the treeview
+      .then(response => response.json())
+      .then(result => {
+        // remove the roadmap from the treeview and clear & hide the roadmap view 
+        var stream = document.getElementById(`stream-${stream_id}`)
+        stream.parentNode.removeChild(stream);
+        document.getElementById(`impact-table`).innerHTML = '';
+        // flash message for the user
+        document.getElementById('mgmt-message').innerHTML = `<div class="alert alert-success alert-dismissible fade show" role="alert">${result.message}
+                                                                  <button type="button" class="close" data-dismiss="alert" aria-label="Close">
+                                                                    <span aria-hidden="true">&times;</span>
+                                                                  </button>
+                                                                </div>`;
+        document.getElementById('delete-stream').disabled = true;
+        document.getElementById('create-roadmap').disabled = true;
+      })
   } else {
     console.log(`Canceled the deletion of stream ${stream_id}`)
   }
@@ -1371,7 +1410,6 @@ function save_roadmap(stream_id) {
 function delete_roadmap(roadmap_id) {
   var confirmation = confirm("Are you sure you want to delete this roadmap?")
   if (confirmation == true) {
-    console.log(`Deleting roadmap ${roadmap_id}`);
     // delete the roadmap
     fetch('/editroadmap', {
       method: 'DELETE',

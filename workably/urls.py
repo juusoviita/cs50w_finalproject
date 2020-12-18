@@ -8,6 +8,7 @@ urlpatterns = [
     path("register", views.register, name="register"),
     path("adminview", views.adminview, name="adminview"),
     path("request_account", views.request_account, name="request_account"),
+    path("request_password", views.request_password, name="request_password"),
     path("reporting", views.reporting, name="reporting"),
     # API paths
     path("password", views.change_password, name="password"),
@@ -25,7 +26,8 @@ urlpatterns = [
     path("profile/<str:username>", views.profile, name="get_profile"),
     path("editprofile", views.edit_profile, name="edit_profile"),
     path("milestones/<int:roadmap_id>", views.milestones, name="get_milestones"),
-    path("impacts/<int:milestone_id>", views.impacts, name="get_impact"),
+    path("impacts", views.impacts, name="impacts"),
+    path("impacts/<int:milestone_id>", views.get_impacts, name="get_impact"),
     path("postimpacts", views.post_impacts, name="post_impacts"),
     path("countries", views.country_list, name="countries"),
     path("regions", views.regions, name="regions"),

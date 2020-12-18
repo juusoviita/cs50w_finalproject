@@ -96,7 +96,7 @@ class Stream(models.Model):
 class Roadmap(models.Model):
     name = models.CharField(blank=False, max_length=180)
     stream = models.ForeignKey(
-        Stream, on_delete=models.CASCADE, related_name="stream")
+        Stream, on_delete=models.CASCADE, related_name="roadmaps")
     path = models.CharField(blank=True, max_length=64)
     owner = models.ForeignKey(
         User, null=True, on_delete=models.SET_NULL, related_name="roadmaps")
