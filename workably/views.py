@@ -256,74 +256,87 @@ def impacts(request):
         type_type = data.get("type", "")
         type_id = data.get("id", "")
 
-        print(type_type + ' ' + str(type_id))
-
-        print(profile.role.name)
-
         if type_type == 'program':
+            program = Program.objects.filter(
+                pk=type_id).values('id', 'name')
+            for program in program:
+                program = dict(program)
+                program['streams'] = {}
+            # if user is Program admin, then return the whole program's impact data, else only the streams where the user has rights
             if profile.role.name == 'Program admin':
-                # if Program admin, then return the whole program's impact data
-                print('Return the whole program\'s impact data')
+                streams = Stream.objects.filter(program=program['id'], parent=None).values(
+                    'id', 'name', 'parent', 'program')
             else:
-                # if Stream admin, then return only the streams where the user is owner
-                print('Return only stream-level impact data')
+                streams = Stream.objects.filter(program=program['id'], admins=user, parent=None).values(
+                    'id', 'name', 'parent', 'program')
+
+            i = 0
+            for stream in streams:
+                stream = dict(stream)
+                # call stream function and assign to a value
+                dependants = f_stream(stream)
+                # set the stream as a value to program dict
+                program['streams'][i] = dependants
+                i += 1
+
+            impacts_json = json.dumps(program)
+            # return HttpResponse(impacts_json, content_type="text/json-comment-filtered")
 
         else:
             if type_type == 'stream':
-                stream = Stream.objects.get(pk=type_id)
-                stream = stream.serialize()
+                stream = Stream.objects.filter(pk=type_id).values(
+                    'id', 'name', 'parent', 'program')
+                # i = 0
+                for stream in stream:
+                    stream = dict(stream)
+                    stream_ret = f_stream(stream)
 
-                # check if stream is a parent to any other streams and if so, loop through them as well
-                streams = Stream.objects.filter(parent=stream['id'])
-                streams_ser = []
-                for child_stream in streams:
-                    child_stream = child_stream.serialize()
-                    streams_ser.append(child_stream)
+            impacts_json = json.dumps(stream_ret)
+        return HttpResponse(impacts_json, content_type="text/json-comment-filtered")
 
-                if len(streams_ser) == 0:
-                    streams_ser.append(stream)
 
-                print(len(streams_ser))
+def f_stream(stream):
+    # check if the stream has children
+    children = Stream.objects.filter(
+        parent=stream['id']).values('id', 'name', 'parent', 'program')
+    if len(children) > 0:
+        stream['children'] = {}
+        i = 0
+        for child in children:
+            child = dict(child)
+            # call stream function and assign to a value
+            dependants = f_stream(child)
+            dependants = dict(dependants)
+            stream['children'][i] = dependants
+            i += 1
+        return(stream)
 
-                # for loop that loops through the streams_ser and at the end adds the roadmaps to the roadmaps dict
-                stream_dict = {}
-                l = 1
-                for stream in streams_ser:
-                    stream = {l: stream}
-                    stream['roadmaps'] = {}
-                    roadmaps = Roadmap.objects.filter(stream=stream[l]['id'])
-                    roadmap_dict = {}
-                    k = 1
-                    for roadmap in roadmaps:
-                        roadmap = {k: roadmap.serialize()}
-                        roadmap['milestones'] = {}
-                        milestones = Milestone.objects.filter(
-                            roadmap=roadmap[k]['id'])
-                        i = 1
-                        milestone_dict = {}
-                        for milestone in milestones:
-                            milestone = {i: milestone.serialize()}
-                            milestone['impacts'] = {}
-                            impacts = Impact.objects.filter(
-                                milestone=milestone[i]['id'])
-                            j = 1
-                            impact_dict = {}
-                            for impact in impacts:
-                                impact = {j: impact.serialize()}
-                                impact_dict.update(impact)
-                                j += 1
-                            milestone[i]['impacts'] = impact_dict
-                            milestone_dict.update(milestone)
-                            i += 1
-                        roadmap[k]['milestones'] = milestone_dict
-                        roadmap_dict.update(roadmap)
-                        k += 1
-                    stream[l]['roadmaps'] = roadmap_dict
-                    stream_dict.update(stream)
+    else:
+        stream['roadmaps'] = {}
+        roadmaps = Roadmap.objects.filter(
+            stream=stream['id']).values('id', 'name', 'stream')
+        j = 0
+        for roadmap in roadmaps:
+            roadmap = dict(roadmap)
+            roadmap['milestones'] = {}
+            stream['roadmaps'][j] = roadmap
+            j += 1
+            milestones = Milestone.objects.filter(roadmap=roadmap['id']).values(
+                'id', 'realized', 'roadmap')
+            k = 0
+            for milestone in milestones:
+                milestone = dict(milestone)
+                milestone['impacts'] = {}
+                roadmap['milestones'][k] = milestone
+                k += 1
+                impacts = Impact.objects.filter(
+                    milestone=milestone['id'])
+                l = 0
+                for impact in impacts:
+                    impact = impact.serialize()
+                    milestone['impacts'][l] = impact
                     l += 1
-                print(streams_ser)
-
-        return JsonResponse({"message": "Data sent!"}, safe=False)
+        return(stream)
 
 
 def get_impacts(request, milestone_id):

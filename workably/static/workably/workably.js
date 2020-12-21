@@ -1114,7 +1114,7 @@ function load_impacttable(id, name, type) {
   })
     .then(response => response.json())
     .then(result => {
-      console.log(result.message);
+      console.log(result);
     })
   event.stopPropagation();
 }
