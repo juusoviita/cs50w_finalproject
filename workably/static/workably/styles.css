@@ -194,3 +194,31 @@ ul, #treeview {
 .active {
   display: block;
 }
+
+th, .type-value {
+  text-align: center;
+}
+
+.type-name {
+  text-align: right;
+}
+
+.type-name, .type-value {
+  border-bottom: 1px solid lightgray;
+  padding-top: 3px;
+  padding-bottom: 3px;
+}
+
+#reset-pw-form label {
+  width: 300px;
+  text-align: right;
+}
+
+#reset-pw-form input {
+  border-style: solid;
+  border-width: 0.5px;
+  border-radius: 6px;
+  border-color: darkgray;
+  width: 200px;
+  margin-left: 15px;
+} 

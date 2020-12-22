@@ -1095,28 +1095,84 @@ function load_impacttable(id, name, type) {
     document.getElementById('delete-stream').disabled = true;
   }
 
-  // display the data as a table showing all the impact types and their Plan, Fcst, and Realized values
-  document.querySelector("#program-name").innerHTML = `<h6>${name}</h6>`;
-  var impact_table = document.querySelector("#impact-table");
-  impact_table.style.display = 'block';
-  impact_table.innerHTML = '';
-  impact_table.innerHTML = `Showing the impact table for ${type} ${name} id: ${id}`;
-  console.log(type);
-  console.log(id);
-  console.log(name);
-  // get the data from the backend
-  fetch('/impacts', {
-    method: 'POST',
-    body: JSON.stringify({
-      type: type,
-      id: id
+  if (document.querySelector("#program-name").innerHTML != `<h6>${name}</h6>`) {
+    // display the data as a table showing all the impact types and their Plan, Fcst, and Realized values
+    document.querySelector("#program-name").innerHTML = `<h6>${name}</h6>`;
+    var impact_table = document.querySelector("#impact-table");
+    impact_table.style.display = 'block';
+    impact_table.innerHTML = '';
+    // create placeholder table with all the impact types and plan, fcst, act
+    var table = document.createElement('table');
+    table.setAttribute('id', 'table');
+    table.innerHTML = `<tr>
+                      <th style="width:320px;"></th>
+                      <th style="width:150px;">Plan</th>
+                      <th style="width:150px;">Forecast</th>
+                      <th style="width:150px;">Actual</th>
+                    </tr>`;
+    impact_table.appendChild(table);
+    fetch('/impact_types')
+      .then(response => response.json())
+      .then(types => {
+        const length = types.length;
+        for (i = 0; i < length; i++) {
+          var type_name = types[i].name;
+          var tr = document.createElement('tr');
+          tr.innerHTML = `
+                        <td class="type-name">${type_name}</td>
+                        <td id='plan-${type_name}' class="type-value"></td>
+                        <td id='fcst-${type_name}' class="type-value"></td>
+                        <td id='act-${type_name}' class="type-value"></td>
+                        `;
+          document.getElementById('table').appendChild(tr);
+        }
+      })
+
+    // get the data from the backend
+    fetch('/impacts', {
+      method: 'POST',
+      body: JSON.stringify({
+        type: type,
+        id: id
+      })
     })
-  })
-    .then(response => response.json())
-    .then(result => {
-      console.log(result);
-    })
-  event.stopPropagation();
+      .then(response => response.json())
+      .then(result => {
+        // if result has streams, it is a program
+        console.log(result);
+        if (result.streams != 'undefined' && result.streams != null) {
+          var streams = result.streams
+          var length = Object.keys(streams).length;
+          var i;
+          // loop through all the streams and check whether they have children or roadmaps
+          for (i = 0; i < length; i++) {
+            console.log(streams[i].name)
+            if (streams[i].children != 'undefined') {
+              console.log(streams[i].children)
+            } else {
+              console.log(streams[i].roadmaps)
+            }
+          }
+        } else if (result.children != 'undefined' && result.children != null) {
+          var children = result.children
+          var length = Object.keys(children).length;
+          var i;
+          // loop through all the streams and check whether they have children or roadmaps
+          for (i = 0; i < length; i++) {
+            console.log(children[i].name)
+          }
+        } else {
+          var roadmaps = result.roadmaps
+          var length = Object.keys(roadmaps).length;
+          var i;
+          for (i = 0; i < length; i++) {
+            console.log(roadmaps[i].name)
+          }
+        }
+        // if result is a stream, then it must have either children or roamdaps underneath it
+      })
+    event.stopPropagation();
+  }
 }
 
 

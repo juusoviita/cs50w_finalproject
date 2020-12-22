@@ -292,6 +292,7 @@ def impacts(request):
                     stream_ret = f_stream(stream)
 
             impacts_json = json.dumps(stream_ret)
+        print(impacts_json)
         return HttpResponse(impacts_json, content_type="text/json-comment-filtered")
 
 
@@ -599,10 +600,6 @@ def login_view(request):
             })
     else:
         return render(request, "workably/login.html")
-
-
-def request_password(request):
-    return render(request, "workably/request_password.html")
 
 
 def logout_view(request):
