@@ -1106,9 +1106,9 @@ function load_impacttable(id, name, type) {
     table.setAttribute('id', 'table');
     table.innerHTML = `<tr>
                       <th style="width:320px;"></th>
-                      <th style="width:150px;">Plan</th>
-                      <th style="width:150px;">Forecast</th>
-                      <th style="width:150px;">Actual</th>
+                      <th style="width:200px;">Plan</th>
+                      <th style="width:200px;">Forecast</th>
+                      <th style="width:200px;">Actual</th>
                     </tr>`;
     impact_table.appendChild(table);
     fetch('/impact_types')
@@ -1137,39 +1137,23 @@ function load_impacttable(id, name, type) {
       })
     })
       .then(response => response.json())
-      .then(result => {
-        // if result has streams, it is a program
-        console.log(result);
-        if (result.streams != 'undefined' && result.streams != null) {
-          var streams = result.streams
-          var length = Object.keys(streams).length;
-          var i;
-          // loop through all the streams and check whether they have children or roadmaps
-          for (i = 0; i < length; i++) {
-            console.log(streams[i].name)
-            if (streams[i].children != 'undefined') {
-              console.log(streams[i].children)
-            } else {
-              console.log(streams[i].roadmaps)
-            }
-          }
-        } else if (result.children != 'undefined' && result.children != null) {
-          var children = result.children
-          var length = Object.keys(children).length;
-          var i;
-          // loop through all the streams and check whether they have children or roadmaps
-          for (i = 0; i < length; i++) {
-            console.log(children[i].name)
-          }
-        } else {
-          var roadmaps = result.roadmaps
-          var length = Object.keys(roadmaps).length;
-          var i;
-          for (i = 0; i < length; i++) {
-            console.log(roadmaps[i].name)
-          }
+      .then(impacts => {
+        const keys = Object.keys(impacts.act);
+        const length = Object.keys(impacts.act).length;
+        console.log(impacts.act);
+        console.log(impacts.fcst);
+        console.log(impacts.plan);
+
+        for (i = 0; i < length; i++) {
+          // convert the numbers to user thousand separator commas
+          var plan_value = new Intl.NumberFormat('en-US').format(impacts.plan[keys[i]]);
+          var fcst_value = new Intl.NumberFormat('en-US').format(impacts.fcst[keys[i]]);
+          var act_value = new Intl.NumberFormat('en-US').format(impacts.act[keys[i]]);
+          // place the values in the right cells the table
+          document.getElementById(`plan-${keys[i]}`).innerHTML = plan_value;
+          document.getElementById(`fcst-${keys[i]}`).innerHTML = fcst_value;
+          document.getElementById(`act-${keys[i]}`).innerHTML = act_value;
         }
-        // if result is a stream, then it must have either children or roamdaps underneath it
       })
     event.stopPropagation();
   }

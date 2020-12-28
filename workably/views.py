@@ -256,88 +256,84 @@ def impacts(request):
         type_type = data.get("type", "")
         type_id = data.get("id", "")
 
-        if type_type == 'program':
-            program = Program.objects.filter(
-                pk=type_id).values('id', 'name')
-            for program in program:
-                program = dict(program)
-                program['streams'] = {}
-            # if user is Program admin, then return the whole program's impact data, else only the streams where the user has rights
-            if profile.role.name == 'Program admin':
-                streams = Stream.objects.filter(program=program['id'], parent=None).values(
-                    'id', 'name', 'parent', 'program')
-            else:
-                streams = Stream.objects.filter(program=program['id'], admins=user, parent=None).values(
-                    'id', 'name', 'parent', 'program')
+        plan_impacts = {}
+        fcst_impacts = {}
+        act_impacts = {}
 
-            i = 0
+        impact_types = ImpactType.objects.all()
+        for impact_type in impact_types:
+            plan_impacts[impact_type.name] = 0
+            fcst_impacts[impact_type.name] = 0
+            act_impacts[impact_type.name] = 0
+
+        # if user is Program admin, then return the whole program's impact data, else only the streams where the user has rights
+        if type_type == 'program' and profile.role.name == 'Program admin':
+            program = Program.objects.filter(pk=type_id).values('id', 'name')
+            streams = Stream.objects.filter(program=program[0]['id']).values(
+                'id', 'name', 'parent', 'program')
+
+        elif type_type == 'program' and profile.role.name == 'Stream admin':
+            program = Program.objects.filter(pk=type_id).values('id', 'name')
+            streams = Stream.objects.filter(program=program[0]['id'], admins=user).values(
+                'id', 'name', 'parent', 'program')
             for stream in streams:
-                stream = dict(stream)
-                # call stream function and assign to a value
-                dependants = f_stream(stream)
-                # set the stream as a value to program dict
-                program['streams'][i] = dependants
+                substreams = Stream.objects.filter(parent=stream['id']).values(
+                    'id', 'name', 'parent', 'program')
+                streams = streams | substreams
+
+        # if type is stream, return stream-level and substream-level data
+        elif type_type == 'stream':
+            streams = Stream.objects.filter(pk=type_id).values(
+                'id', 'name', 'parent', 'program')
+            stream_count = len(streams)
+            i = 0
+            while i < stream_count:
+                substreams = Stream.objects.filter(parent=streams[i]['id']).values(
+                    'id', 'name', 'parent', 'program')
+                streams = streams | substreams
+                stream_count = len(streams)
                 i += 1
 
-            impacts_json = json.dumps(program)
-            # return HttpResponse(impacts_json, content_type="text/json-comment-filtered")
+        for stream in streams:
+            roadmaps = Roadmap.objects.filter(
+                stream=stream['id']).values('id', 'name')
+            for roadmap in roadmaps:
+                milestones = Milestone.objects.filter(
+                    roadmap=roadmap['id']).values('id', 'realized')
+                for milestone in milestones:
+                    impacts = Impact.objects.filter(
+                        milestone=milestone['id']).values('id', 'impact_type', 'plan_amount', 'forecast_amount', 'milestone')
+                    for impact in impacts:
+                        impact_type = ImpactType.objects.filter(
+                            pk=impact['impact_type']).values('name')
+                        impact_type = impact_type[0]['name']
+                        # if plan_amount = 'None', convert it to zero, else assign the value to a variable and then do the same for the forecast
+                        if impact['plan_amount'] == None:
+                            plan_amount = 0
+                        else:
+                            plan_amount = impact['plan_amount']
+                        if impact['forecast_amount'] == None:
+                            forecast_amount = plan_amount
+                        else:
+                            forecast_amount = impact['forecast_amount']
+                        # if milestone is realized, then check which value to assign as actual value
+                        if milestone['realized'] == True:
+                            actual_amount = forecast_amount
+                        else:
+                            actual_amount = 0
 
-        else:
-            if type_type == 'stream':
-                stream = Stream.objects.filter(pk=type_id).values(
-                    'id', 'name', 'parent', 'program')
-                # i = 0
-                for stream in stream:
-                    stream = dict(stream)
-                    stream_ret = f_stream(stream)
+                        # then finally set all the values into the right dicts
+                        plan_impacts[impact_type] = plan_impacts[impact_type] + plan_amount
+                        fcst_impacts[impact_type] = fcst_impacts[impact_type] + \
+                            forecast_amount
+                        act_impacts[impact_type] = act_impacts[impact_type] + \
+                            actual_amount
 
-            impacts_json = json.dumps(stream_ret)
-        print(impacts_json)
+        impacts = {"plan": plan_impacts,
+                   "fcst": fcst_impacts, "act": act_impacts}
+        impacts_json = json.dumps(impacts)
+
         return HttpResponse(impacts_json, content_type="text/json-comment-filtered")
-
-
-def f_stream(stream):
-    # check if the stream has children
-    children = Stream.objects.filter(
-        parent=stream['id']).values('id', 'name', 'parent', 'program')
-    if len(children) > 0:
-        stream['children'] = {}
-        i = 0
-        for child in children:
-            child = dict(child)
-            # call stream function and assign to a value
-            dependants = f_stream(child)
-            dependants = dict(dependants)
-            stream['children'][i] = dependants
-            i += 1
-        return(stream)
-
-    else:
-        stream['roadmaps'] = {}
-        roadmaps = Roadmap.objects.filter(
-            stream=stream['id']).values('id', 'name', 'stream')
-        j = 0
-        for roadmap in roadmaps:
-            roadmap = dict(roadmap)
-            roadmap['milestones'] = {}
-            stream['roadmaps'][j] = roadmap
-            j += 1
-            milestones = Milestone.objects.filter(roadmap=roadmap['id']).values(
-                'id', 'realized', 'roadmap')
-            k = 0
-            for milestone in milestones:
-                milestone = dict(milestone)
-                milestone['impacts'] = {}
-                roadmap['milestones'][k] = milestone
-                k += 1
-                impacts = Impact.objects.filter(
-                    milestone=milestone['id'])
-                l = 0
-                for impact in impacts:
-                    impact = impact.serialize()
-                    milestone['impacts'][l] = impact
-                    l += 1
-        return(stream)
 
 
 def get_impacts(request, milestone_id):

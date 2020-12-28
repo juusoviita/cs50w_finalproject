@@ -191,9 +191,10 @@ class Impact(models.Model):
             "forecast_amount": self.forecast_amount,
             "milestone": self.milestone.id
         }
-
+    '''
     def __str__(self):
         if self.forecast_amount is None:
             return f"{self.milestone.roadmap.name}, #{self.milestone.number} {self.milestone.description}: {self.impact_type}, {self.plan_amount}"
         else:
             return f"{self.milestone.roadmap.name}, #{self.milestone.number} {self.milestone.description}: {self.impact_type}, {self.forecast_amount}"
+    '''
