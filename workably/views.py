@@ -441,7 +441,6 @@ def edit_profile(request):
     if request.method == "PUT":
         data = json.loads(request.body)
         user_id = data.get("user_id", "")
-        # username = data.get("username", "")
         first_name = data.get("firstname", "")
         last_name = data.get("lastname", "")
         email = data.get("email", "")
@@ -476,12 +475,92 @@ def country_list(request):
     return JsonResponse(country_dict, safe=False)
 
 
-def reporting(request):
-    return render(request, "workably/reporting.html")
+@csrf_exempt
+def export(request):
+    if request.method == "POST":
+        # get the user's information
+        user = request.user
+        profile = Profile.objects.get(user=user)
+        # get the type and the id from the request body
+        data = json.loads(request.body)
+        type_type = data.get("type", "")
+        type_id = data.get("id", "")
 
+        # create the response
+        response = HttpResponse(content_type='text/csv')
+        response['Content-Disposition'] = 'attachment; filename="data.csv"'
+        # create a row writer and create the first row for the file
+        writer = csv.writer(response)
 
-def adminview(request):
-    return render(request, "workably/adminview.html")
+        toprow = ["program_id", "program_name", "stream_id", "stream_name", 'parent_id', "roadmap_id", "roadmap_name", "owner",
+                  "region", "country", "milestone_id", "milestone_description", "plan_date", "forecast_date", "realized"]
+        # get the impact types and append them to the toprow list
+        impact_types = ImpactType.objects.all()
+        for impact_type in impact_types:
+            toprow.append(("plan_" + str(impact_type).lower()))
+            toprow.append(("fcst_" + str(impact_type).lower()))
+
+        writer.writerow(toprow)
+
+        # if the whole program and user is "Program admin", get all the impacts
+        # get the needed program, stream, program, milestone, impact information
+        if type_type == 'program' and profile.role.name == 'Program admin':
+            program = Program.objects.filter(pk=type_id).values('id', 'name')
+            program_id = program[0]['id']
+            program_name = program[0]['name']
+            streams = Stream.objects.filter(program=program[0]['id']).values(
+                'id', 'name', 'parent')
+            for stream in streams:
+                stream_id = stream['id']
+                stream_name = stream['name']
+                parent_id = stream['parent']
+                roadmaps = Roadmap.objects.filter(stream=stream_id).values(
+                    'id', 'name', 'owner', 'region', 'country')
+                for roadmap in roadmaps:
+                    roadmap_id = roadmap['id']
+                    roadmap_name = roadmap['name']
+                    owner = roadmap['owner']
+                    region = roadmap['region']
+                    country = roadmap['country']
+                    milestones = Milestone.objects.filter(roadmap=roadmap_id).values(
+                        'id', 'description', 'plan_date', 'forecast_date', 'realized')
+                    for milestone in milestones:
+                        milestone_id = milestone['id']
+                        milestone_description = milestone['description']
+                        plan_date = milestone['plan_date']
+                        forecast_date = milestone['forecast_date']
+                        realized = milestone['realized']
+                        # create a row to which add the impacts
+                        milestone_row = [program_id, program_name, stream_id, stream_name, parent_id, roadmap_id, roadmap_name, owner, region, country, milestone_id,
+                                         milestone_description, plan_date, forecast_date, realized, '', '', '', '', '', '', '', '', '', '', '', '', '', '', '', '', '', '', '', '', '', '', '', '']
+                        # loop through all the impacts of the milestone and assign the values to the right column
+                        impacts = Impact.objects.filter(milestone=milestone_id).values(
+                            'id', 'impact_type', 'plan_amount', 'forecast_amount')
+                        for impact in impacts:
+                            impact_type = ImpactType.objects.filter(
+                                pk=impact['impact_type']).values('name')
+                            if impact['plan_amount'] == None:
+                                plan_amount = ""
+                            else:
+                                plan_amount = impact['plan_amount']
+                            if impact['forecast_amount'] == None:
+                                forecast_amount = ""
+                            else:
+                                forecast_amount = impact['forecast_amount']
+
+                            plan_impact_col = "plan_" + \
+                                str(impact_type[0]['name']).lower()
+                            fcst_impact_col = "fcst_" + \
+                                str(impact_type[0]['name']).lower()
+                            plan_index = toprow.index(plan_impact_col)
+                            fcst_index = toprow.index(fcst_impact_col)
+
+                            milestone_row[plan_index] = plan_amount
+                            milestone_row[fcst_index] = forecast_amount
+
+                        writer.writerow(milestone_row)
+
+        return response
 
 
 def index(request):

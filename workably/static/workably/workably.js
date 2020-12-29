@@ -1140,9 +1140,6 @@ function load_impacttable(id, name, type) {
       .then(impacts => {
         const keys = Object.keys(impacts.act);
         const length = Object.keys(impacts.act).length;
-        console.log(impacts.act);
-        console.log(impacts.fcst);
-        console.log(impacts.plan);
 
         for (i = 0; i < length; i++) {
           // convert the numbers to user thousand separator commas
@@ -1483,4 +1480,46 @@ function export_data(id, type) {
   } else {
     console.log(`Exporting data for ${type} ${id}`);
   }
+  // get the data from the backend
+  fetch('/export', {
+    method: 'POST',
+    body: JSON.stringify({
+      type: type,
+      id: id
+    })
+  })
+    .then(response => response.blob())
+    .then(blob => {
+      downloadBlob(blob, 'data.csv');
+    })
+}
+
+function downloadBlob(blob, filename) {
+  // create an object URL for the blob object
+  const url = URL.createObjectURL(blob);
+
+  // create a new new anchor element
+  const a = document.createElement('a');
+
+  // set the href and download attributes for the anchor element
+  a.href = url;
+  a.download = filename || 'download';
+
+  // click handler that releasest the object URL after the element has been clicked
+  // required for one-off downloads of the blob content
+  const clickHandler = () => {
+    setTimeout(() => {
+      URL.revokeObjectURL(url);
+      this.removeEventListener('click', clickHandler);
+    }, 150);
+  };
+  // add the click event listener to the the anchor element
+  a.addEventListener('click', clickHandler, false);
+
+  // Programmatically trigger a click on the anchor element since we want to start the download automatically
+  // also the anchor tag is not added to the DOM
+  a.click()
+
+  // return the anchor element
+  return a;
 }

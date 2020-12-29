@@ -24,9 +24,6 @@
         <li class="nav-item">
           <a id="program-mgmt" class="nav-link" href="{% url 'index' %}">Program Management</a>
         </li>
-        <li class="nav-item">
-          <a id="report-view" class="nav-link" href="{% url 'reporting' %}">Reporting</a>
-        </li>
         {% endif %}
         {% if user.profile.role.name == 'Roadmap owner' %}
         <li class="nav-item dropdown">
@@ -45,9 +42,6 @@
         {% if user.profile.role.name == 'Program admin' or user.is_superuser %}
         <li class="nav-item">
           <a class="nav-link" href="{% url 'register' %}">Register a user</a>
-        </li>
-        <li class="nav-item">
-          <a class="nav-link" href="{% url 'adminview' %}">Admin</a>
         </li>
         {% endif %}
         <li class=" nav-item">

@@ -7,7 +7,6 @@ urlpatterns = [
     path("login", views.login_view, name="login"),
     path("logout", views.logout_view, name="logout"),
     path("register", views.register, name="register"),
-    path("adminview", views.adminview, name="adminview"),
     path("request_account", views.request_account, name="request_account"),
     path("password-reset/", auth_views.PasswordResetView.as_view(
         template_name='workably/password_reset.html'), name="password_reset"),
@@ -17,7 +16,6 @@ urlpatterns = [
         template_name="workably/password_reset_confirm.html"), name="password_reset_confirm"),
     path("password-reset-complete/", auth_views.PasswordResetCompleteView.as_view(
         template_name='workably/password_reset_complete.html'), name="password_reset_complete"),
-    path("reporting", views.reporting, name="reporting"),
     # API paths
     path("password", views.change_password, name="password"),
     path("programs", views.get_programs, name="get_programs"),
@@ -40,5 +38,6 @@ urlpatterns = [
     path("countries", views.country_list, name="countries"),
     path("regions", views.regions, name="regions"),
     path("impact_types", views.impact_types, name="impact_types"),
-    path("milestone", views.milestone, name="milestone")
+    path("milestone", views.milestone, name="milestone"),
+    path("export", views.export, name="export")
 ]
