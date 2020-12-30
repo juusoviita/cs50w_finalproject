@@ -1,5 +1,5 @@
 ### General info
-I work as a business analyst for a large, multinational industrial firm and my job includes the reporting and following of post M&A programs, i.e. business integrations.
+I work as a business analyst for a large, multinational industrial firm and my job includes the management, reporting and following of post M&A programs, i.e. business integrations.
 So far, we've used a reporting tool provided to us by an unnamed management consulting firm, whose origins may or may not be too far from Cambridge, MA.
 The tool is relatively simple, and therefore I thought that instead of continuing to use theirs, I could create my own version of it, simplyfying it to its bare essentials for our needs.
 That was the impetus for Workably, my submission for the Final project.

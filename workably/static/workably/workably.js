@@ -1469,6 +1469,8 @@ function delete_roadmap(roadmap_id) {
                                                                   </button>
                                                                 </div>`;
         document.getElementById('delete-roadmap').disabled = true;
+        document.querySelector("#roadmap-view").style.display = 'none';
+        document.querySelector("#milestone-list").style.display = 'none';
       })
   } else {
     console.log(`Canceled the deletion of roadmap ${roadmap_id}`)
