@@ -325,6 +325,7 @@ function load_roadmap(roadmap_id) {
   event.preventDefault();
 }
 
+
 function edit_roadmap(roadmap_id, roadmap_name, owner, created_on, last_updated, description, last_updater, current_country, current_region) {
   // hide the roadmap info and show the edit view
   document.querySelector('#roadmap-view').style.display = 'none';
