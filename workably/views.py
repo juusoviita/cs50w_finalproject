@@ -502,7 +502,7 @@ def export(request):
 
         writer.writerow(toprow)
 
-        # if the whole program and user is "Program admin", get all the impacts
+        # if the whole program and user is "Program admin", get all the impacts, else just get the stream or the streams where the user has rights
         # get the needed program, stream, program, milestone, impact information
         if type_type == 'program' and profile.role.name == 'Program admin':
             program = Program.objects.filter(pk=type_id).values('id', 'name')
@@ -510,55 +510,84 @@ def export(request):
             program_name = program[0]['name']
             streams = Stream.objects.filter(program=program[0]['id']).values(
                 'id', 'name', 'parent')
+
+        elif type_type == 'program' and profile.role.name == 'Stream admin':
+            program = Program.objects.filter(pk=type_id).values('id', 'name')
+            program_id = program[0]['id']
+            program_name = program[0]['name']
+            streams = Stream.objects.filter(program=program[0]['id'], admins=user).values(
+                'id', 'name', 'parent')
             for stream in streams:
-                stream_id = stream['id']
-                stream_name = stream['name']
-                parent_id = stream['parent']
-                roadmaps = Roadmap.objects.filter(stream=stream_id).values(
-                    'id', 'name', 'owner', 'region', 'country')
-                for roadmap in roadmaps:
-                    roadmap_id = roadmap['id']
-                    roadmap_name = roadmap['name']
-                    owner = roadmap['owner']
-                    region = roadmap['region']
-                    country = roadmap['country']
-                    milestones = Milestone.objects.filter(roadmap=roadmap_id).values(
-                        'id', 'description', 'plan_date', 'forecast_date', 'realized')
-                    for milestone in milestones:
-                        milestone_id = milestone['id']
-                        milestone_description = milestone['description']
-                        plan_date = milestone['plan_date']
-                        forecast_date = milestone['forecast_date']
-                        realized = milestone['realized']
-                        # create a row to which add the impacts
-                        milestone_row = [program_id, program_name, stream_id, stream_name, parent_id, roadmap_id, roadmap_name, owner, region, country, milestone_id,
-                                         milestone_description, plan_date, forecast_date, realized, '', '', '', '', '', '', '', '', '', '', '', '', '', '', '', '', '', '', '', '', '', '', '', '']
-                        # loop through all the impacts of the milestone and assign the values to the right column
-                        impacts = Impact.objects.filter(milestone=milestone_id).values(
-                            'id', 'impact_type', 'plan_amount', 'forecast_amount')
-                        for impact in impacts:
-                            impact_type = ImpactType.objects.filter(
-                                pk=impact['impact_type']).values('name')
-                            if impact['plan_amount'] == None:
-                                plan_amount = ""
-                            else:
-                                plan_amount = impact['plan_amount']
-                            if impact['forecast_amount'] == None:
-                                forecast_amount = ""
-                            else:
-                                forecast_amount = impact['forecast_amount']
+                substreams = Stream.objects.filter(parent=stream['id']).values(
+                    'id', 'name', 'parent')
+                streams = streams | substreams
 
-                            plan_impact_col = "plan_" + \
-                                str(impact_type[0]['name']).lower()
-                            fcst_impact_col = "fcst_" + \
-                                str(impact_type[0]['name']).lower()
-                            plan_index = toprow.index(plan_impact_col)
-                            fcst_index = toprow.index(fcst_impact_col)
+        # if type is stream, return stream-level and substream-level data
+        elif type_type == 'stream':
+            streams = Stream.objects.filter(pk=type_id).values(
+                'id', 'name', 'parent', 'program')
+            program = Program.objects.filter(
+                pk=streams[0]['program']).values('id', 'name')
+            program_id = program[0]['id']
+            program_name = program[0]['name']
+            stream_count = len(streams)
+            i = 0
+            while i < stream_count:
+                substreams = Stream.objects.filter(parent=streams[i]['id']).values(
+                    'id', 'name', 'parent', 'program')
+                streams = streams | substreams
+                stream_count = len(streams)
+                i += 1
 
-                            milestone_row[plan_index] = plan_amount
-                            milestone_row[fcst_index] = forecast_amount
+        for stream in streams:
+            stream_id = stream['id']
+            stream_name = stream['name']
+            parent_id = stream['parent']
+            roadmaps = Roadmap.objects.filter(stream=stream_id).values(
+                'id', 'name', 'owner', 'region', 'country')
+            for roadmap in roadmaps:
+                roadmap_id = roadmap['id']
+                roadmap_name = roadmap['name']
+                owner = roadmap['owner']
+                region = roadmap['region']
+                country = roadmap['country']
+                milestones = Milestone.objects.filter(roadmap=roadmap_id).values(
+                    'id', 'description', 'plan_date', 'forecast_date', 'realized')
+                for milestone in milestones:
+                    milestone_id = milestone['id']
+                    milestone_description = milestone['description']
+                    plan_date = milestone['plan_date']
+                    forecast_date = milestone['forecast_date']
+                    realized = milestone['realized']
+                    # create a row to which add the impacts
+                    milestone_row = [program_id, program_name, stream_id, stream_name, parent_id, roadmap_id, roadmap_name, owner, region, country, milestone_id,
+                                     milestone_description, plan_date, forecast_date, realized, '', '', '', '', '', '', '', '', '', '', '', '', '', '', '', '', '', '', '', '', '', '', '', '']
+                    # loop through all the impacts of the milestone and assign the values to the right column
+                    impacts = Impact.objects.filter(milestone=milestone_id).values(
+                        'id', 'impact_type', 'plan_amount', 'forecast_amount')
+                    for impact in impacts:
+                        impact_type = ImpactType.objects.filter(
+                            pk=impact['impact_type']).values('name')
+                        if impact['plan_amount'] == None:
+                            plan_amount = ""
+                        else:
+                            plan_amount = impact['plan_amount']
+                        if impact['forecast_amount'] == None:
+                            forecast_amount = ""
+                        else:
+                            forecast_amount = impact['forecast_amount']
 
-                        writer.writerow(milestone_row)
+                        plan_impact_col = "plan_" + \
+                            str(impact_type[0]['name']).lower()
+                        fcst_impact_col = "fcst_" + \
+                            str(impact_type[0]['name']).lower()
+                        plan_index = toprow.index(plan_impact_col)
+                        fcst_index = toprow.index(fcst_impact_col)
+
+                        milestone_row[plan_index] = plan_amount
+                        milestone_row[fcst_index] = forecast_amount
+
+                    writer.writerow(milestone_row)
 
         return response
 
