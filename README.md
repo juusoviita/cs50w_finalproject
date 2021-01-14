@@ -31,8 +31,14 @@ Why this project is distinct from all the previous ones then? Workably has
 
 #### Files and Directories
 - Main Directory
-  - workably
-    - static/workably
+  - workably - the main application directory
+    - static/workably - has all the static files
+      - **styles.css**: all the styling for the website
+      - **workably.js**: contains all the JavaScript for fetching data and manipulating the DOM (more details underneath)
+    - templates/workably: has all the HTML files for the app (including the ones needed for the password reset via email functionality),
+    - **models.py**: contains all nine models needed to make the application's structure work, and includes an imported field - CountryFiled,
+    - **urls.py**: includes all the 'regular' URLs for logging in and out, as well as all the API paths, and the paths for resetting the password via email,
+    - **views.py**: has all the view functions needed to make the app work, including the APIs which are used to create, update, and delete data,
   
 ##### Models.py
 In the models.py file, I created nine different models to reflect the structure of the program. On the side of the regular, though slightly modified User model, I added Role and Profile models, which contain the different types of User roles (program/stream admin, roadmap owner) and other personal information for the user, respectively. After those, I needed models for Program, Stream, Roadmap, Milestone, ImpactType, and Impact to create the structure described above. For the Roadmap model, I had to import CountryField to provide information often needed for internal reporting.
