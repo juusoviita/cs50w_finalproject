@@ -9,7 +9,7 @@ As Workably is a business-first tool, you cannot sign up and start updating rand
 
 For the general structure of the Workably web app, I adopted the ideas from the network pset, i.e. I used a a singe-page application architecture, and used APIs to query the Django backend. The relative complexity of the app meant that both the views.py and workably.js files are quite long, but hopefully quite well documented. The SPA approach meant that there are not many HTML templates.
 
-#### Features, in short
+#### Features
 1. Projects are created by a superuser in the admin view,
 2. Other users can view, create, update, and delete streams, programs, milestones, and impacts depending on their user rights,
 3. Users can update project's/roadmap's basic information and assign a new owner for it,
