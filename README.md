@@ -30,6 +30,10 @@ Why this project is distinct from all the previous ones then? Workably has
 - send password reset link using email.
 
 #### Files and Directories
+- Main Directory
+  - workably
+    - static/workably
+  
 ##### Models.py
 In the models.py file, I created nine different models to reflect the structure of the program. On the side of the regular, though slightly modified User model, I added Role and Profile models, which contain the different types of User roles (program/stream admin, roadmap owner) and other personal information for the user, respectively. After those, I needed models for Program, Stream, Roadmap, Milestone, ImpactType, and Impact to create the structure described above. For the Roadmap model, I had to import CountryField to provide information often needed for internal reporting.
 
