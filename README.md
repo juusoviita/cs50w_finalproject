@@ -26,8 +26,10 @@ Why this project is distinct from all the previous ones then? Workably has
   - different user roles for differnet views of the webpage,
 - JavaScript used to create more complex webpages and elements than in the coursework (e.g. treeview, datatable, milestones with impacts),
 - ability to export data from the website in a csv format to use in Excel and PowerPoint,
-- a personal admin/profile view, where user can change their own information,
-- send password reset link using email.
+- a personal admin/profile view, where user can change their own information and password,
+- send password reset link using email, 
+- instead of signing up for an account, the user can request for an account which then sends an email to the admin,
+- similarly, when an account is created for a new user, the new user is sent an email containing their username and asked to contact an admin for a password.
 
 #### Files and Directories
 - `Main Directory`
